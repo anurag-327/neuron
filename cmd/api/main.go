@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"github.com/anurag-327/neuron/db"
+	"github.com/anurag-327/neuron/internal/factory"
 	"github.com/anurag-327/neuron/internal/handler"
 	"github.com/anurag-327/neuron/internal/middleware"
-	"github.com/anurag-327/neuron/internal/producer"
-	"github.com/anurag-327/neuron/internal/response"
+	"github.com/anurag-327/neuron/internal/util/response"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -23,7 +23,7 @@ func init() {
 }
 
 func main() {
-	p := producer.GetProducer()
+	p := factory.GetPublisher()
 	defer p.Close()
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())

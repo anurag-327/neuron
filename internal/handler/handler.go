@@ -6,7 +6,7 @@ import (
 	"github.com/anurag-327/neuron/internal/dto"
 	"github.com/anurag-327/neuron/internal/models"
 	"github.com/anurag-327/neuron/internal/repository"
-	"github.com/anurag-327/neuron/internal/response"
+	"github.com/anurag-327/neuron/internal/util/response"
 	"github.com/gin-gonic/gin"
 )
 

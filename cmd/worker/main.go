@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/anurag-327/neuron/db"
-	"github.com/anurag-327/neuron/internal/consumer"
+	"github.com/anurag-327/neuron/internal/factory"
 	"github.com/joho/godotenv"
 )
 
@@ -17,10 +17,9 @@ func init() {
 }
 
 func main() {
-	topics := []string{}
-	topics = append(topics, "code-jobs")
+	topic := "code-jobs"
 
-	c, _ := consumer.NewConsumer("code-runner-group", topics)
+	c := factory.GetSubscriber("code-runner-group", topic)
 
 	c.Close()
 
