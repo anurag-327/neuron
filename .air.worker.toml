@@ -1,0 +1,51 @@
+# Config file for Air
+
+# Root directory
+root = "./"
+
+# Build path (temporary)
+tmp_dir = "tmp"
+
+# Commands to run
+[build]
+cmd = "go build -o ./tmp/worker.exe ./cmd/worker/main.go"
+bin = "./tmp/worker.exe"
+
+# Watch directories
+[watch]
+# Files or directories to include (default is all files and directories)
+include = ["**/*.go", "**/*.html", "**/*.css", "**/*.js"]
+
+# Files or directories to exclude
+exclude = ["tmp", "node_modules", "vendor"]
+
+# Commands to run before building
+[[before]]
+cmds = [
+  "echo Cleaning temporary files...",
+  "del /q .\\tmp\\*"
+]
+
+# Commands to run after building
+[[after]]
+cmds = [
+  "echo Build successful!"
+]
+
+# Delay time after the last file change (in milliseconds)
+delay = 1000
+
+# Log settings
+[log]
+log_level = "info"  # Available options: debug, info, warning, error
+log_color = true
+
+# Miscellaneous settings
+[misc]
+# Send system signal on killing the process
+kill_signal = "SIGTERM"
+
+# Environment variables
+[env]
+APP_ENV = "development"
+PORT = "8080"
