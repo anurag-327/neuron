@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"unicode"
 
@@ -48,6 +49,19 @@ func WriteContentToFile(path string, content []byte, permission os.FileMode) err
 		return err
 	}
 	return nil
+}
+
+func DeleteFolder(path string) error {
+	if path == "" || path == "/" {
+		return fmt.Errorf("unsafe delete path: %q", path)
+	}
+
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+
+	return os.RemoveAll(abs)
 }
 
 func IsValidObjectID(id string) (primitive.ObjectID, error) {

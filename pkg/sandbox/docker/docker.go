@@ -51,6 +51,8 @@ func (d *DockerClient) Run(ctx context.Context, basePathString, code, input, lan
 		return "", "", sandbox.ErrInternalError, "Failed to create job directory"
 	}
 
+	defer util.DeleteFolder(basePath)
+
 	// 2) Load language config + build filenames
 	languageConfig, err := GetLanguageConfig(language)
 	if err != nil {
