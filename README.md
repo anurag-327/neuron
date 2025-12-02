@@ -10,9 +10,6 @@
  <img src="https://svg-banners.vercel.app/api?type=glitch&text1=Neuron&width=900&height=250" />
 </p>
 
-<p align="center">
-  <img src="https://svg-banners.vercel.app/api?type=origin&text1=Neuron&width=900&height=250" />
-</p>
 
 
 **A powerful distributed code execution engine with multi-language support**
