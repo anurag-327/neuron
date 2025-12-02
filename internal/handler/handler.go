@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -50,7 +49,7 @@ func SubmitCodeHandler(c *gin.Context) {
 	job := &models.Job{
 		Language: body.Language,
 		Code:     body.Code,
-		Input:    *body.Input,
+		Input:    body.Input,
 		Status:   models.StatusQueued,
 		QueuedAt: now,
 	}
@@ -94,7 +93,6 @@ func GetJobStatusHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	job, err := repository.GetJobByID(ctx, jobID)
-	fmt.Println(job, err)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
