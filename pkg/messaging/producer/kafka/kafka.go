@@ -4,16 +4,10 @@ import (
 	"context"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/anurag-327/neuron/pkg/messaging"
 	"github.com/segmentio/kafka-go"
-)
-
-var (
-	producerInstance *Producer
-	once             sync.Once
 )
 
 type Producer struct {
@@ -32,7 +26,7 @@ func NewProducer() (messaging.Publisher, error) {
 			Addr:         kafka.TCP(broker),
 			Balancer:     &kafka.Hash{},
 			BatchSize:    100,
-			BatchTimeout: 20 * time.Millisecond,
+			BatchTimeout: 10 * time.Millisecond,
 			RequiredAcks: kafka.RequireOne,
 			Async:        true,
 		},
@@ -42,13 +36,14 @@ func NewProducer() (messaging.Publisher, error) {
 	return kp, nil
 }
 
-func (kp *Producer) Publish(topic string, data []byte) error {
+func (kp *Producer) Publish(topic string, key string, data []byte) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	err := kp.writer.WriteMessages(ctx,
 		kafka.Message{
 			Topic: topic,
+			Key:   []byte(key),
 			Value: data,
 		},
 	)

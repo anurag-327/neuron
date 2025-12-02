@@ -37,3 +37,8 @@ func GetJobByID(ctx context.Context, id string) (*models.Job, error) {
 	}
 	return job, nil
 }
+
+func DeleteJob(ctx context.Context, job *models.Job) error {
+	coll := mgm.Coll(job)
+	return coll.DeleteWithCtx(ctx, job)
+}

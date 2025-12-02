@@ -18,12 +18,14 @@ var (
 
 type KafkaConsumer struct {
 	reader *kafka.Reader
+	topic  string
+	group  string
 }
 
 func NewConsumer(consumerGroup string, topic string) (messaging.Subscriber, error) {
 	broker := os.Getenv("KAFKA_BROKER")
 	if broker == "" {
-		log.Println("KAFKA_BROKER not set, using default localhost:9092")
+		log.Println("⚠️ KAFKA_BROKER not set, using default localhost:9092")
 		broker = "localhost:9092"
 	}
 
@@ -38,25 +40,72 @@ func NewConsumer(consumerGroup string, topic string) (messaging.Subscriber, erro
 	})
 
 	log.Printf("✅ Kafka consumer initialized. Group: %s | Topic: %s", consumerGroup, topic)
-	return &KafkaConsumer{reader: reader}, nil
+	return &KafkaConsumer{reader: reader, topic: topic, group: consumerGroup}, nil
 }
 
+// Consume is the normal streaming consumer —
+// internally calls ConsumeControlled with maxConcurrent = 0 (no limit).
 func (kc *KafkaConsumer) Consume(ctx context.Context, handler func([]byte) error) {
-	log.Println("🎧 Starting Kafka consumer loop...")
+	log.Printf("⚡ Starting unbounded consumer for topic=%s", kc.topic)
+	kc.ConsumeControlled(ctx, handler, 0)
+}
+
+// ConsumeControlled reads messages with bounded concurrency.
+// If maxConcurrent = 0 → behaves like normal Consume() (no limit).
+func (kc *KafkaConsumer) ConsumeControlled(ctx context.Context, handler func([]byte) error, maxConcurrent int) {
+	var sem chan struct{}
+	if maxConcurrent > 0 {
+		sem = make(chan struct{}, maxConcurrent)
+		log.Printf("🚀 Controlled consumer started for topic=%s (limit=%d)", kc.topic, maxConcurrent)
+	} else {
+		log.Printf("⚡ Unbounded consumer started for topic=%s", kc.topic)
+	}
+
 	for {
-		m, err := kc.reader.ReadMessage(ctx)
-		if err != nil {
-			if err == context.Canceled {
-				log.Println("Consumer context canceled, stopping.")
+		// Apply backpressure only if a limit is set
+		if sem != nil {
+			select {
+			case sem <- struct{}{}: // Acquire slot
+			case <-ctx.Done():
+				log.Printf("🛑 Context canceled for topic=%s", kc.topic)
 				return
 			}
-			log.Printf("Kafka read error: %v", err)
+		}
+
+		msg, err := kc.reader.ReadMessage(ctx)
+		if err != nil {
+			// Release slot if we acquired one
+			if sem != nil {
+				select {
+				case <-sem:
+				default:
+				}
+			}
+
+			if err == context.Canceled {
+				log.Printf("🛑 Consumer context canceled for topic=%s", kc.topic)
+				return
+			}
+			log.Printf("⚠️ Kafka read error [%s]: %v", kc.topic, err)
+			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 
-		if err := handler(m.Value); err != nil {
-			log.Printf("Handler error: %v", err)
-		}
+		// Process message concurrently (bounded by sem)
+		go func(value []byte) {
+			defer func() {
+				if sem != nil {
+					<-sem // Release slot
+				}
+				if r := recover(); r != nil {
+					log.Printf("💥 Panic in handler for topic=%s: %v", kc.topic, r)
+				}
+			}()
+
+			if err := handler(value); err != nil {
+				log.Printf("❌ Handler error for topic=%s: %v", kc.topic, err)
+			}
+		}(msg.Value)
 	}
 }
 
@@ -65,8 +114,8 @@ func (kc *KafkaConsumer) Close() {
 		return
 	}
 	if err := kc.reader.Close(); err != nil {
-		log.Printf("Error closing Kafka consumer: %v", err)
+		log.Printf("⚠️ Error closing Kafka consumer for topic=%s: %v", kc.topic, err)
 	} else {
-		log.Println("Kafka consumer closed.")
+		log.Printf("🧹 Kafka consumer closed for topic=%s", kc.topic)
 	}
 }
