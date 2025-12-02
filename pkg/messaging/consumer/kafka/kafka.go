@@ -4,16 +4,10 @@ import (
 	"context"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/anurag-327/neuron/pkg/messaging"
 	"github.com/segmentio/kafka-go"
-)
-
-var (
-	consumerInstance messaging.Subscriber
-	once             sync.Once
 )
 
 type KafkaConsumer struct {

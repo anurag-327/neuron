@@ -11,6 +11,7 @@ import (
 	"github.com/anurag-327/neuron/db"
 	"github.com/anurag-327/neuron/internal/factory"
 	sandboxUtil "github.com/anurag-327/neuron/internal/util/sandbox"
+	"github.com/anurag-327/neuron/pkg/messaging"
 	"github.com/joho/godotenv"
 )
 
@@ -19,6 +20,12 @@ func init() {
 		log.Println("⚠️  Warning: .env file not found, using environment variables")
 	}
 	db.ConnectMongoDB()
+}
+
+type ConfigStruct struct {
+	Group         string
+	Handler       func([]byte) error
+	MaxConcurrent int
 }
 
 func main() {
@@ -31,11 +38,7 @@ func main() {
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
 	// Define topics and handlers
-	topics := map[string]struct {
-		Group         string
-		Handler       func([]byte) error
-		MaxConcurrent int
-	}{
+	topics := map[string]ConfigStruct{
 		"code-jobs": {
 			Group:         "code-runner-group",
 			Handler:       sandboxUtil.ExecuteCode,
@@ -44,11 +47,16 @@ func main() {
 	}
 
 	for topic, cfg := range topics {
-		go func(topic, group string, handler func([]byte) error, maxConcurrent int) {
-			c := factory.GetSubscriber(group, topic)
-			defer c.Close()
-			c.ConsumeControlled(ctx, handler, maxConcurrent)
-		}(topic, cfg.Group, cfg.Handler, cfg.MaxConcurrent)
+		// initialize subscriber BEFORE starting goroutine
+		sub, err := factory.GetSubscriber(cfg.Group, topic)
+		if err != nil {
+			log.Fatalf("Failed to initialize subscriber for %s: %v", topic, err)
+		}
+
+		go func(sub messaging.Subscriber, cfg ConfigStruct) {
+			defer sub.Close()
+			sub.ConsumeControlled(ctx, cfg.Handler, cfg.MaxConcurrent)
+		}(sub, cfg)
 	}
 
 	//  Wait for shutdown signal

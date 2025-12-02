@@ -23,8 +23,11 @@ func init() {
 }
 
 func main() {
-	p := factory.GetPublisher()
-	defer p.Close()
+	publisher, err := factory.GetPublisher()
+	if err != nil {
+		log.Fatalf("Failed to initialize publisher: %v", err)
+	}
+	defer publisher.Close()
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
 

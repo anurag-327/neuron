@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/anurag-327/neuron/internal/dto"
@@ -49,7 +50,10 @@ func SubmitCodeHandler(c *gin.Context) {
 		response.Error(c, 500, err.Error())
 		return
 	}
-	p := factory.GetPublisher()
+	p, err := factory.GetPublisher()
+	if err != nil {
+		response.Error(c, 500, "Internal Server Error")
+	}
 	if err := p.Publish("code-jobs", job.Language, jobBytes); err != nil {
 		_ = repository.DeleteJob(ctx, job)
 		response.Error(c, 500, err.Error())
@@ -65,9 +69,16 @@ func GetJobStatusHandler(c *gin.Context) {
 		return
 	}
 
+	_, err := util.IsValidObjectID(jobID)
+	if err != nil {
+		response.Error(c, 401, "Invalid Job ID")
+		return
+	}
+
 	ctx := c.Request.Context()
 
 	job, err := repository.GetJobByID(ctx, jobID)
+	fmt.Println(job, err)
 	if err != nil {
 		response.Error(c, 500, err.Error())
 		return
@@ -87,6 +98,7 @@ func GetJobStatusHandler(c *gin.Context) {
 	totalTime := job.FinishedAt.Sub(job.QueuedAt)
 
 	response.Success(c, 200, "job result fetched successfully", gin.H{
+		"jobId":               job.ID,
 		"status":              job.Status,
 		"stdout":              job.Stdout,
 		"stderr":              job.Stderr,

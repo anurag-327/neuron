@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 	"unicode"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func ValidateAndSanitizeCpp(code string) error {
@@ -46,4 +48,9 @@ func WriteContentToFile(path string, content []byte, permission os.FileMode) err
 		return err
 	}
 	return nil
+}
+
+func IsValidObjectID(id string) (primitive.ObjectID, error) {
+	objectId, err := primitive.ObjectIDFromHex(id)
+	return objectId, err
 }

@@ -62,7 +62,9 @@ PORT=8080
 KAFKA_BROKER=localhost:9092
 MONGO_URI=mongodb://localhost:27017
 MONGO_DB_NAME=neuron
+QUEUE_BACKEND="redis" 
 ```
+You can choose between redis or kafka for messaging brokering
 
 ### 3️⃣ Start Infrastructure Services
 
