@@ -184,10 +184,5 @@ func (d *DockerClient) Run(ctx context.Context, basePathString, code, input, lan
 	if errType != "" {
 		return stdout, stderr, errType, errMsg
 	}
-
-	if stderr != "" {
-		return stdout, stderr, sandbox.ErrRuntimeError, sandbox.MsgRuntimeError
-	}
-
 	return stdout, stderr, "", ""
 }

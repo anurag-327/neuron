@@ -94,75 +94,75 @@ func BuildFileNames(basePath string, cfg LangConfig) FileNames {
 		PathFull: filepath.Join(basePath, full),
 	}
 }
-
 func DetectError(language, stdout, stderr string) (sandbox.SandboxError, string) {
 
-	// Combine for signatures that may appear in stdout (JS, Go, Python, Java)
-	c := stdout + "\n" + stderr
-	s := stderr // compiler errors always in stderr
+	s := stderr
+	c := stdout + "\n" + stderr // Some runtime errors print to stdout
 
-	switch language {
-
-	// ---------------------------------------------------------------------
-	// C++ (g++)
-	// ---------------------------------------------------------------------
-	case "cpp":
+	// C++
+	if language == "cpp" {
+		// Compiler errors (from g++)
 		if strings.Contains(s, "error:") ||
 			strings.Contains(s, "fatal error:") ||
 			strings.Contains(s, "undefined reference") {
 			return sandbox.ErrCompilationError, sandbox.MsgCompilationError
 		}
-		// C++ runtime errors only printed in stderr (segfaults, abort)
-		if isMeaningfulRuntimeErrorCPP(stderr) {
+
+		// Runtime crash detection
+		if strings.Contains(s, "Segmentation fault") ||
+			strings.Contains(s, "core dumped") ||
+			strings.Contains(s, "abort") ||
+			strings.Contains(s, "floating point exception") {
 			return sandbox.ErrRuntimeError, sandbox.MsgRuntimeError
 		}
 
-	// ---------------------------------------------------------------------
-	// Go (go run)
-	// ---------------------------------------------------------------------
-	case "go":
+	}
+
+	// Go
+	if language == "go" {
 		if strings.Contains(s, "undefined:") ||
 			strings.Contains(s, "cannot use") ||
 			strings.Contains(s, "no required module") {
 			return sandbox.ErrCompilationError, sandbox.MsgCompilationError
 		}
+
 		if strings.Contains(c, "panic:") ||
 			strings.Contains(c, "runtime error:") {
 			return sandbox.ErrRuntimeError, sandbox.MsgRuntimeError
 		}
+	}
 
-	// ---------------------------------------------------------------------
 	// Python
-	// ---------------------------------------------------------------------
-	case "python":
+	if language == "python" {
 		if strings.Contains(s, "SyntaxError") ||
 			strings.Contains(s, "IndentationError") {
 			return sandbox.ErrCompilationError, sandbox.MsgCompilationError
 		}
+
 		if strings.Contains(c, "Traceback (most recent call last):") {
 			return sandbox.ErrRuntimeError, sandbox.MsgRuntimeError
 		}
+	}
 
-	// ---------------------------------------------------------------------
 	// Java
-	// ---------------------------------------------------------------------
-	case "java":
+	if language == "java" {
 		if strings.Contains(s, "error:") ||
 			strings.Contains(s, "cannot find symbol") ||
 			strings.Contains(s, "symbol not found") {
 			return sandbox.ErrCompilationError, sandbox.MsgCompilationError
 		}
+
 		if strings.Contains(c, "Exception in thread") {
 			return sandbox.ErrRuntimeError, sandbox.MsgRuntimeError
 		}
+	}
 
-	// ---------------------------------------------------------------------
 	// JavaScript (Node.js)
-	// ---------------------------------------------------------------------
-	case "js":
+	if language == "js" {
 		if strings.Contains(s, "SyntaxError:") {
 			return sandbox.ErrCompilationError, sandbox.MsgCompilationError
 		}
+
 		if strings.Contains(c, "TypeError:") ||
 			strings.Contains(c, "ReferenceError:") ||
 			strings.Contains(c, "UnhandledPromiseRejectionWarning") {
@@ -170,31 +170,60 @@ func DetectError(language, stdout, stderr string) (sandbox.SandboxError, string)
 		}
 	}
 
-	// ---------------------------------------------------------------------
-	// Fallback:
-	// Return runtime error ONLY if stderr contains meaningful error text.
-	// ---------------------------------------------------------------------
+	// LAST RESORT CHECK — strict runtime detection
+	// Only treat stderr as runtime error if it contains *real* crash signals.
+
 	if isMeaningfulRuntimeErrorGeneric(stderr) {
 		return sandbox.ErrRuntimeError, sandbox.MsgRuntimeError
 	}
 
+	// Everything OK
 	return "", ""
 }
 
-func isMeaningfulRuntimeErrorCPP(stderr string) bool {
-	// C++ runtime crashes often include these
-	return strings.Contains(stderr, "Segmentation fault") ||
-		strings.Contains(stderr, "core dumped") ||
-		strings.Contains(stderr, "abort")
-}
-
 func isMeaningfulRuntimeErrorGeneric(stderr string) bool {
-	// Ignore warnings
-	if strings.Contains(stderr, "warning") || strings.Contains(stderr, "Warning") {
+	s := strings.ToLower(stderr)
+
+	// ignore if nothing meaningful
+	if strings.TrimSpace(s) == "" {
 		return false
 	}
-	if strings.TrimSpace(stderr) == "" {
+
+	// ignore logs like [info], [debug], etc.
+	if strings.Contains(s, "[info]") ||
+		strings.Contains(s, "[debug]") ||
+		strings.Contains(s, "note:") {
 		return false
 	}
-	return true
+
+	// ignore warnings
+	if strings.Contains(s, "warning") {
+		return false
+	}
+
+	// real runtime errors
+	crashPatterns := []string{
+		"segmentation fault",
+		"core dumped",
+		"panic:",
+		"runtime error",
+		"traceback (most recent call last):",
+		"exception in thread",
+		"nullpointerexception",
+		"typeerror:",
+		"referenceerror:",
+		"indexerror:",
+		"valueerror:",
+		"abort",
+		"illegal instruction",
+		"floating point exception",
+	}
+
+	for _, pat := range crashPatterns {
+		if strings.Contains(s, pat) {
+			return true
+		}
+	}
+
+	return false
 }
