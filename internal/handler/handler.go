@@ -56,23 +56,53 @@ func SubmitCodeHandler(c *gin.Context) {
 		return
 	}
 
-	// Return job id
-	response.Success(c, 200, "job queued successfully", gin.H{"jobId": job.ID})
+	response.Success(c, 200, "job queued successfully", gin.H{"jobId": job.ID, "status": job.Status})
 }
-
 func GetJobStatusHandler(c *gin.Context) {
 	jobID := c.Param("jobId")
 	if jobID == "" {
 		response.Error(c, 400, "jobId is required")
 		return
 	}
+
 	ctx := c.Request.Context()
-	// Get job from db
+
 	job, err := repository.GetJobByID(ctx, jobID)
 	if err != nil {
 		response.Error(c, 500, err.Error())
 		return
 	}
-	// Return status to user
-	response.Success(c, 200, "status fetched successfully", gin.H{"status": job.Status})
+
+	// Return minimal info for queued or running jobs
+	if job.Status == models.StatusQueued || job.Status == models.StatusRunning {
+		response.Success(c, 200, "status fetched successfully", gin.H{
+			"status": job.Status,
+			"jobId":  job.ID,
+		})
+		return
+	}
+
+	executionTime := job.FinishedAt.Sub(job.StartedAt)
+	queueTime := job.StartedAt.Sub(job.QueuedAt)
+	totalTime := job.FinishedAt.Sub(job.QueuedAt)
+
+	response.Success(c, 200, "job result fetched successfully", gin.H{
+		"status":              job.Status,
+		"stdout":              job.Stdout,
+		"stderr":              job.Stderr,
+		"sandboxErrorType":    job.SandboxErrorType,
+		"sandboxErrorMessage": job.SandboxErrorMessage,
+		"language":            job.Language,
+
+		// timestamps
+		"queuedAt":   job.QueuedAt,
+		"startedAt":  job.StartedAt,
+		"finishedAt": job.FinishedAt,
+
+		// time statistics
+		"executionTimeMs": executionTime.Milliseconds(),
+		"queueTimeMs":     queueTime.Milliseconds(),
+		"totalTimeMs":     totalTime.Milliseconds(),
+	})
+
 }

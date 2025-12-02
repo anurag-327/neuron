@@ -95,7 +95,7 @@ func BuildFileNames(basePath string, cfg LangConfig) FileNames {
 	}
 }
 
-func DetectError(language, stdout, stderr string) (sandbox.SandboxError, sandbox.SandboxErrorMessage) {
+func DetectError(language, stdout, stderr string) (sandbox.SandboxError, string) {
 
 	// Combine for signatures that may appear in stdout (JS, Go, Python, Java)
 	c := stdout + "\n" + stderr

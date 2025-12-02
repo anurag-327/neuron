@@ -138,7 +138,6 @@ POST /api/v1/runner/submit
 {
   "jobId": "12345abc",
   "status": "queued",
-  "submittedAt": "2025-12-02T10:30:00Z"
 }
 ```
 

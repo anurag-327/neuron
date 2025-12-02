@@ -41,7 +41,7 @@ func GetDockerClient() (sandbox.Runner, error) {
 //    stdout, stderr, errType, errMessage
 // -----------------------------------------------------------------------------
 
-func (d *DockerClient) Run(ctx context.Context, basePathString, code, input, language string) (string, string, sandbox.SandboxError, sandbox.SandboxErrorMessage) {
+func (d *DockerClient) Run(ctx context.Context, basePathString, code, input, language string) (string, string, sandbox.SandboxError, string) {
 
 	// 1) Create job directory
 	projectRoot, _ := os.Getwd()

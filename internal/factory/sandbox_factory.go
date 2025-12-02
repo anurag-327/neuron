@@ -19,6 +19,7 @@ func GetClient() sandbox.Runner {
 		if err != nil {
 			log.Fatalf("Failed to init docker client: %v", err)
 		}
+
 		runnerInstance = cli
 	})
 	return runnerInstance

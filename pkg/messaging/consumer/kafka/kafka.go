@@ -30,13 +30,16 @@ func NewConsumer(consumerGroup string, topic string) (messaging.Subscriber, erro
 	}
 
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:     []string{broker},
-		GroupID:     consumerGroup,
-		Topic:       topic,
-		MinBytes:    10e3, // 10KB
-		MaxBytes:    10e6, // 10MB
-		MaxWait:     1 * time.Second,
-		StartOffset: kafka.FirstOffset,
+		Brokers:           []string{broker},
+		GroupID:           consumerGroup,
+		Topic:             topic,
+		MinBytes:          1,
+		MaxBytes:          10e6,
+		MaxWait:           200 * time.Millisecond,
+		StartOffset:       kafka.LastOffset,
+		HeartbeatInterval: 3 * time.Second,
+		SessionTimeout:    30 * time.Second,
+		ReadLagInterval:   -1,
 	})
 
 	log.Printf("✅ Kafka consumer initialized. Group: %s | Topic: %s", consumerGroup, topic)
