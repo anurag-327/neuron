@@ -9,7 +9,7 @@ This guide walks you through **cloning**, **environment setup**, **running with 
 
 Before running this project, make sure you have the following installed:
 
-### ✅ **1. Docker**
+### **1. Docker**
 
 Required to run:
 
@@ -21,7 +21,7 @@ Install from:
 
 ---
 
-### ✅ **2. Go (Golang)**
+### **2. Go (Golang)**
 
 Needed only for running API and Worker in development mode.
 Version: **Go 1.22+**
@@ -31,7 +31,7 @@ Install from:
 
 ---
 
-### ✅ **3. MongoDB (Local Installation)**
+### **3. MongoDB (Local Installation)**
 
 We assume MongoDB is installed locally and running on **port 27017**.
 
@@ -42,7 +42,7 @@ Download from:
 
 ---
 
-# 📥 1. Clone the Repository
+# 1. Clone the Repository
 
 ```bash
 git clone https://github.com/anurag-327/neuron.git
@@ -51,7 +51,7 @@ cd neuron
 
 ---
 
-# ⚙️ 2. Environment Setup
+# 2. Environment Setup
 
 Create a `.env` file in the project root:
 
@@ -66,7 +66,7 @@ These variables are required by both **API** and **Worker** services.
 
 ---
 
-# 🐳 3. Running Services with Docker Compose
+# 3. Running Services with Docker Compose
 
 Start required infrastructure:
 
@@ -87,7 +87,7 @@ docker ps
 
 ---
 
-# 🔁 4. Running API & Worker in Development Mode (Hot Reload with Air)
+# 4. Running API & Worker in Development Mode (Hot Reload with Air)
 
 Install **Air**:
 
@@ -116,7 +116,7 @@ Both services restart automatically on file changes.
 
 ---
 
-# 🌐 5. Accessing the API
+# 5. Accessing the API
 
 The API server runs at:
 
@@ -124,7 +124,7 @@ The API server runs at:
 http://localhost:8080
 ```
 
-### ▶ Submit Code
+### 1. Submit Code
 
 ```
 POST /api/v1/runner/submit
@@ -142,7 +142,7 @@ POST /api/v1/runner/submit
 
 ---
 
-### 📊 Check Job Status
+### 2. Check Job Status
 
 ```
 GET /api/v1/runner/:jobId/status
