@@ -3,6 +3,8 @@ name: neuron
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
+    profiles:
+      - kafka
     container_name: neuron-zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -11,6 +13,8 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: kafka-neuron
+    profiles:
+      - kafka
     depends_on:
       - zookeeper
     ports:
@@ -27,6 +31,8 @@ services:
 
   redis:
     image: redis/redis-stack:latest
+    profiles:
+      - redis
     container_name: redis-neuron
     ports:
       - "6379:6379"

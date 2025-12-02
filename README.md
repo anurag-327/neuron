@@ -44,43 +44,92 @@
 
 ---
 
-## 🚀 Quick Start
+# 🚀 Quick Start
 
-### 1️⃣ Clone the Repository
+## 1️⃣ Clone the Repository
 
 ```bash
 git clone https://github.com/anurag-327/neuron.git
 cd neuron
 ```
 
-### 2️⃣ Configure Environment
+---
 
-Create a `.env` file in the project root:
+## 2️⃣ Configure Environment
+
+Create `.env`:
 
 ```env
 PORT=8080
-KAFKA_BROKER=localhost:9092
 MONGO_URI=mongodb://localhost:27017
 MONGO_DB_NAME=neuron
-QUEUE_BACKEND="redis" 
+
+# Messaging backend
+QUEUE_BACKEND="redis"   # options: redis | kafka
+
+# Kafka specific (if chosen)
+KAFKA_BROKER=localhost:9092
 ```
-You can choose between redis or kafka for messaging brokering
 
-### 3️⃣ Start Infrastructure Services
+### 🟩 Recommended: Redis Backend
 
-Launch Kafka and Sandbox containers:
+* Extremely fast
+* Near-zero queue latency (microseconds to milliseconds)
+* Best for real-time code execution
+
+### 🟦 Optional: Kafka Backend
+
+* Distributed, partitioned queue
+* Best for horizontal scaling and large clusters
+
+---
+
+## 3️⃣ Start Infrastructure Services
+
+Neuron uses Docker Compose **profiles** to load only the required messaging backend.
+
+### ✅ **To start Redis backend (recommended)**
 
 ```bash
-docker compose up -d
+docker compose --profile redis up -d
 ```
 
-Verify containers are running:
+Starts:
+
+* Redis Stack (with UI)
+* Sandbox-ready environment
+
+---
+
+### 🟦 **To start Kafka backend**
+
+```bash
+docker compose --profile kafka up -d
+```
+
+Starts:
+
+* Zookeeper
+* Kafka broker
+
+---
+
+### 🔀 **To run both Redis + Kafka (for testing)**
+
+```bash
+docker compose --profile redis --profile kafka up -d
+```
+
+---
+
+Check containers:
 
 ```bash
 docker ps
 ```
 
-You should see containers for Kafka and the sandbox environment.
+---
+
 
 ### 4️⃣ Install Air (Hot Reload Tool)
 
@@ -198,3 +247,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 [Report Bug](https://github.com/anurag-327/neuron/issues) • [Request Feature](https://github.com/anurag-327/neuron/issues)
 
 </div>
+
