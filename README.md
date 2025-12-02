@@ -248,3 +248,10 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 </div>
 
+Here’s a **clean, concise project description** including the note about Go executor availability:
+
+---
+
+> ⚠️ **Note:** Go execution support is currently unavailable due to limitations in the Golang runtime inside restricted Docker sandboxes. Other languages are fully supported and stable.
+
+---
