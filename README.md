@@ -17,7 +17,7 @@
 
 **A powerful distributed code execution engine with multi-language support**
 
-[Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [API Reference](#-api-reference)
+[Features](#-features) • [Quick Start](#-quick-start) • [API Reference](#-api-reference)
 
 </div>
 
