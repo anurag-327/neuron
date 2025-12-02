@@ -42,9 +42,10 @@ var Langs = map[string]LangConfig{
 		BaseName:    "main",
 		Ext:         "go",
 		Cmd: func(n FileNames) string {
-			return fmt.Sprintf("go run %s", n.FullName)
+			return fmt.Sprintf("go build -o %s %s && ./%s", n.BaseName, n.FullName, n.BaseName)
 		},
 	},
+
 	"python": {
 		DockerImage: "python:3.12-alpine",
 		BaseName:    "main",
@@ -54,7 +55,7 @@ var Langs = map[string]LangConfig{
 		},
 	},
 	"java": {
-		DockerImage: "openjdk:21-jdk-slim",
+		DockerImage: "eclipse-temurin:21-jdk-alpine",
 		BaseName:    "Main",
 		Ext:         "java",
 		Cmd: func(n FileNames) string {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -75,6 +76,7 @@ func (d *DockerClient) Run(ctx context.Context, basePathString, code, input, lan
 	// 5) Pull image
 	reader, err := d.client.ImagePull(ctx, imageName, image.PullOptions{})
 	if err != nil {
+		log.Printf("Failed to pull sandbox image: %v", err.Error())
 		return "", "", sandbox.ErrSandboxError, "Failed to pull sandbox image"
 	}
 	io.Copy(io.Discard, reader)
@@ -109,7 +111,7 @@ func (d *DockerClient) Run(ctx context.Context, basePathString, code, input, lan
 			Resources: container.Resources{
 				Memory:    256 * 1024 * 1024,
 				NanoCPUs:  1_000_000_000,
-				PidsLimit: func(i int64) *int64 { return &i }(50),
+				PidsLimit: func(i int64) *int64 { return &i }(200),
 			},
 		},
 		nil, nil, "",

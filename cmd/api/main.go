@@ -31,7 +31,7 @@ func main() {
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
 
-	router.GET("/api/v1/runner/submit", handler.SubmitCodeHandler)
+	router.POST("/api/v1/runner/submit", handler.SubmitCodeHandler)
 	router.GET("/api/v1/runner/:jobId/status", handler.GetJobStatusHandler)
 
 	router.GET("/health", func(c *gin.Context) {
