@@ -1,0 +1,15 @@
+package routes
+
+import (
+	runnerHandler "github.com/anurag-327/neuron/internal/handler/runner"
+	"github.com/anurag-327/neuron/internal/middleware"
+	"github.com/gin-gonic/gin"
+)
+
+func RegisterRunnerRoutes(router *gin.RouterGroup) {
+	runnerRouter := router.Group("/runner")
+	{
+		runnerRouter.POST("/submit", middleware.VerifyTokenMiddleware(), runnerHandler.SubmitCodeHandler)
+		runnerRouter.GET("/:jobId/status", middleware.VerifyTokenMiddleware(), runnerHandler.GetJobStatusHandler)
+	}
+}

@@ -5,10 +5,12 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/anurag-327/neuron/db"
+	"github.com/anurag-327/neuron/config"
+	"github.com/anurag-327/neuron/conn"
 	"github.com/anurag-327/neuron/internal/factory"
-	"github.com/anurag-327/neuron/internal/handler"
 	"github.com/anurag-327/neuron/internal/middleware"
+	"github.com/anurag-327/neuron/internal/models"
+	"github.com/anurag-327/neuron/internal/routes"
 	"github.com/anurag-327/neuron/internal/util/response"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -19,7 +21,9 @@ func init() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	db.ConnectMongoDB()
+	config.JwtSecret = []byte(os.Getenv("JWT_SECRET"))
+	conn.ConnectMongoDB()
+	models.CreateUserIndexes()
 }
 
 func main() {
@@ -31,8 +35,7 @@ func main() {
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
 
-	router.POST("/api/v1/runner/submit", handler.SubmitCodeHandler)
-	router.GET("/api/v1/runner/:jobId/status", handler.GetJobStatusHandler)
+	routes.RegisterV1Group(router)
 
 	router.GET("/health", func(c *gin.Context) {
 		response.JSON(c, http.StatusOK, "healthy")

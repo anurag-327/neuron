@@ -1,10 +1,13 @@
 package factory
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 
+	sandboxUtil "github.com/anurag-327/neuron/internal/util/sandbox"
 	"github.com/anurag-327/neuron/pkg/messaging"
 	kafkaConsumer "github.com/anurag-327/neuron/pkg/messaging/consumer/kafka"
 	redisConsumer "github.com/anurag-327/neuron/pkg/messaging/consumer/redis"
@@ -20,7 +23,7 @@ var (
 
 func GetPublisher() (messaging.Publisher, error) {
 	oncePublisher.Do(func() {
-		backend := os.Getenv("QUEUE_BACKEND")
+		backend := os.Getenv("QUEUE_SERVICE")
 
 		switch backend {
 		case "kafka":
@@ -56,7 +59,7 @@ func GetSubscriber(group string, topic string) (messaging.Subscriber, error) {
 		return sub, consumerErrors[key]
 	}
 
-	backend := os.Getenv("QUEUE_BACKEND")
+	backend := os.Getenv("QUEUE_SERVICE")
 
 	var (
 		s   messaging.Subscriber
@@ -78,4 +81,19 @@ func GetSubscriber(group string, topic string) (messaging.Subscriber, error) {
 
 	// caller handles error
 	return s, err
+}
+
+func StartConsumer(ctx context.Context, topic string, group string, maxConcurrent int) error {
+	sub, err := GetSubscriber(group, topic)
+	if err != nil {
+		return err
+	}
+
+	go func(sub messaging.Subscriber) {
+		defer sub.Close()
+		sub.ConsumeControlled(ctx, sandboxUtil.ExecuteCode, maxConcurrent)
+	}(sub)
+
+	log.Printf("🚀 Worker listening on topic: %s", topic)
+	return nil
 }

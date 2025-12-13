@@ -4,8 +4,8 @@ import (
 	"log"
 	"sync"
 
+	"github.com/anurag-327/neuron/conn"
 	"github.com/anurag-327/neuron/pkg/sandbox"
-	"github.com/anurag-327/neuron/pkg/sandbox/docker"
 )
 
 var (
@@ -13,14 +13,13 @@ var (
 	onceRunnerInstance sync.Once
 )
 
-func GetClient() sandbox.Runner {
+func GetRunner() sandbox.Runner {
 	onceRunnerInstance.Do(func() {
-		cli, err := docker.GetDockerClient()
+		_, err := conn.GetDockerClient()
 		if err != nil {
 			log.Fatalf("Failed to init docker client: %v", err)
 		}
 
-		runnerInstance = cli
 	})
 	return runnerInstance
 }

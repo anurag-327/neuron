@@ -8,10 +8,7 @@ import (
 	"github.com/anurag-327/neuron/pkg/sandbox"
 )
 
-//
-// -----------------------------------------------------------------------------
 //  Language metadata (single source of truth)
-// -----------------------------------------------------------------------------
 
 type FileNames struct {
 	BaseName string // "main" or "Main"
@@ -33,8 +30,8 @@ var Langs = map[string]LangConfig{
 		BaseName:    "main",
 		Ext:         "cpp",
 		Cmd: func(n FileNames) string {
-			return fmt.Sprintf("g++ %s -o %s && ./%s",
-				n.FullName, n.BaseName, n.BaseName)
+			return fmt.Sprintf("g++ %s -o %s && ./%s < %s",
+				n.FullName, n.BaseName, n.BaseName, "input.txt")
 		},
 	},
 	"go": {
@@ -51,7 +48,7 @@ var Langs = map[string]LangConfig{
 		BaseName:    "main",
 		Ext:         "py",
 		Cmd: func(n FileNames) string {
-			return fmt.Sprintf("python3 %s", n.FullName)
+			return fmt.Sprintf("python3 %s < %s", n.FullName, "input.txt")
 		},
 	},
 	"java": {
@@ -59,8 +56,8 @@ var Langs = map[string]LangConfig{
 		BaseName:    "Main",
 		Ext:         "java",
 		Cmd: func(n FileNames) string {
-			return fmt.Sprintf("javac %s && java %s",
-				n.FullName, n.BaseName)
+			return fmt.Sprintf("javac %s && java %s < %s",
+				n.FullName, n.BaseName, "input.txt")
 		},
 	},
 	"js": {
@@ -68,15 +65,12 @@ var Langs = map[string]LangConfig{
 		BaseName:    "main",
 		Ext:         "js",
 		Cmd: func(n FileNames) string {
-			return fmt.Sprintf("node %s", n.FullName)
+			return fmt.Sprintf("node %s < %s", n.FullName, "input.txt")
 		},
 	},
 }
 
-//
-// -----------------------------------------------------------------------------
 //  Helper Functions
-// -----------------------------------------------------------------------------
 
 func GetLanguageConfig(language string) (LangConfig, error) {
 	cfg, ok := Langs[language]

@@ -34,6 +34,7 @@ func GetJobByID(ctx context.Context, id string) (*models.Job, error) {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, ErrJobNotFound
 		}
+		return nil, err
 	}
 	return job, nil
 }

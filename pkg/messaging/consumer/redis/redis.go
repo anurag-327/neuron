@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/anurag-327/neuron/db"
+	"github.com/anurag-327/neuron/conn"
 	"github.com/anurag-327/neuron/pkg/messaging"
 	"github.com/redis/go-redis/v9"
 )
@@ -20,7 +20,7 @@ func NewConsumer(group, stream string) (messaging.Subscriber, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	client, err := db.GetRedisClient(ctx)
+	client, err := conn.GetRedisClient(ctx)
 	if err != nil {
 		log.Printf(" Redis connection failed: %v\n", err)
 		return nil, err

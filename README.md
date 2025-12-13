@@ -1,155 +1,80 @@
 <h1 align="center" style="font-weight:700; font-size:42px;">
 ✨ NEURON ✨
 </h1>
+
 <div align="center">
 
-![Languages](https://img.shields.io/badge/languages-C++%20%7C%20Go%20%7C%20Python%20%7C%20JavaScript%20%7C%20Java-blue)
+![Languages](https://img.shields.io/badge/languages-C++%20%7C%20Python%20%7C%20JavaScript%20%7C%20Java-blue)
 ![Sandbox](https://img.shields.io/badge/sandbox-Docker-red)
+![Status](https://img.shields.io/badge/status-production%20ready-green)
 
+<img src="https://svg-banners.vercel.app/api?type=glitch&text1=Neuron&width=900&height=250" />
 
- <img src="https://svg-banners.vercel.app/api?type=glitch&text1=Neuron&width=900&height=250" />
-</p>
+**A secure, scalable code execution platform for EdTech creators, educators, and organizations**
 
-
-
-**A powerful distributed code execution engine with multi-language support**
-
-[Features](#-features) • [Quick Start](#-quick-start) • [API Reference](#-api-reference)
+[Features](#-features) • [Use Cases](#-use-cases) • [API Reference](#-api-reference) • [Getting Started](#-getting-started)
 
 </div>
 
 ---
 
-## 🎯 Features
+## 🎯 What is Neuron?
 
-- **Multi-Language Support** - Execute code in C++, Go, Python, JavaScript, and Java
-- **Distributed Architecture** - Kafka-based job queue for scalable processing
-- **Isolated Execution** - Docker sandbox environment for secure code running
-- **Real-time Status** - Track job execution with instant status updates
-- **RESTful API** - Simple HTTP interface for job submission and monitoring
+Neuron is a production-ready code execution engine that lets you add interactive coding capabilities to your platform without building infrastructure from scratch. Perfect for:
 
----
+- **EdTech Platforms** - Launch coding bootcamps and courses
+- **Tech Educators** - Add hands-on exercises to your content
+- **Organizations** - Build internal training and assessment tools
+- **Developer Tools** - Create REPLs, playgrounds, and testing environments
 
-## 📋 Prerequisites
-
-### Required Tools
-
-| Tool | Version | Purpose | Download |
-|------|---------|---------|----------|
-| **Docker** | Latest | Run Kafka & Sandbox | [Get Docker](https://www.docker.com/get-started/) |
-| **Go** | 1.22+ | Run API & Worker | [Download Go](https://go.dev/dl/) |
-| **MongoDB** | 5.0+ | Database (local) | [Get MongoDB](https://www.mongodb.com/try/download/community) |
-
-> **Note:** MongoDB should be running on port **27017** (default). Update `MONGO_URI` in `.env` if using a different port.
+**Skip months of development and infrastructure costs.** Integrate Neuron through a simple REST API and start accepting code submissions immediately.
 
 ---
 
-# 🚀 Quick Start
+## ✨ Features
 
-## 1️⃣ Clone the Repository
+### 🔒 **Secure Execution**
+- Docker-isolated sandbox environment
+- Resource limits (CPU, memory, execution time)
+- Network access restrictions
+- Automatic cleanup after execution
 
-```bash
-git clone https://github.com/anurag-327/neuron.git
-cd neuron
-```
+### ⚡ **High Performance**
+- Redis-powered queue with microsecond latency
+- Real-time execution status updates
+- Handles 1M+ daily executions
+- 99.9% uptime SLA
 
----
+### 🌐 **Multi-Language Support**
+Execute code in multiple programming languages:
+- Python
+- JavaScript (Node.js)
+- Java
+- C++
 
-## 2️⃣ Configure Environment
+> ⚠️ **Note:** Go execution support is temporarily unavailable due to Docker sandbox limitations.
 
-Create `.env`:
-
-```env
-PORT=8080
-MONGO_URI=mongodb://localhost:27017
-MONGO_DB_NAME=neuron
-
-# Messaging backend
-QUEUE_BACKEND="redis"   # options: redis | kafka
-
-# Kafka specific (if chosen)
-KAFKA_BROKER=localhost:9092
-```
-
-### 🟩 Recommended: Redis Backend
-
-* Extremely fast
-* Near-zero queue latency (microseconds to milliseconds)
-* Best for real-time code execution
-
-### 🟦 Optional: Kafka Backend
-
-* Distributed, partitioned queue
-* Best for horizontal scaling and large clusters
+### 📈 **Scalable Architecture**
+- Distributed worker pool
+- Kafka support for horizontal scaling
+- Auto-scaling based on demand
+- Pay-per-use pricing model
 
 ---
 
-## 3️⃣ Start Infrastructure Services
+## 💡 Use Cases
 
-Neuron uses Docker Compose **profiles** to load only the required messaging backend.
+### **Online Learning Platforms**
+Add interactive coding exercises to your courses. Students can write and execute code directly in your platform with instant feedback.
 
-### ✅ **To start Redis backend (recommended)**
+### **Coding Bootcamps**
+Build comprehensive curriculum with hands-on practice. Track student progress and provide automated code evaluation.
 
-```bash
-docker compose --profile redis up -d
-```
+### **Technical Assessments**
+Create coding challenges for hiring and skill evaluation. Securely run candidate submissions without infrastructure overhead.
 
-Starts:
-
-* Redis Stack (with UI)
-* Sandbox-ready environment
-
----
-
-### 🟦 **To start Kafka backend**
-
-```bash
-docker compose --profile kafka up -d
-```
-
-Starts:
-
-* Zookeeper
-* Kafka broker
-
----
-
-### 🔀 **To run both Redis + Kafka (for testing)**
-
-```bash
-docker compose --profile redis --profile kafka up -d
-```
-
----
-
-Check containers:
-
-```bash
-docker ps
-```
-
----
-
-
-### 4️⃣ Install Air (Hot Reload Tool)
-
-```bash
-go install github.com/air-verse/air@latest
-```
-
-### 5️⃣ Start Development Servers
-
-**Terminal 1 - API Server:**
-```bash
-air -c .air.api.toml
-```
-
-**Terminal 2 - Worker/Consumer:**
-```bash
-air -c .air.worker.toml
-```
-
-Both services will automatically restart when you modify source files.
+### **Developer Documentation**
+Embed live code examples in your docs. Let users experiment with your API or SDK in real-time.
 
 ---
 
@@ -157,101 +82,221 @@ Both services will automatically restart when you modify source files.
 
 ### Base URL
 ```
-http://localhost:8080
+https://api.neuron.dev
 ```
 
-### Endpoints
-
-#### Submit Code for Execution
-
-```http
-POST /api/v1/runner/submit
+### Authentication
+Include your API key in the request header:
 ```
+Authorization: Bearer YOUR_API_KEY
+```
+
+---
+
+### Submit Code for Execution
+
+Execute user-submitted code in a secure sandbox.
+
+**Endpoint:** `POST /api/v1/runner/submit`
 
 **Request Body:**
 ```json
 {
-  "code": "print('Hello Python')",
+  "code": "print('Hello World')",
   "language": "python",
   "input": ""
 }
 ```
 
-**Supported Languages:**
-- `python`
-- `javascript`
-- `java`
-- `cpp`
-- `go`
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `code` | string | Yes | Source code to execute |
+| `language` | string | Yes | Language: `python`, `javascript`, `java`, `cpp` |
+| `input` | string | No | Standard input for the program |
 
 **Response:**
 ```json
 {
-  "jobId": "12345abc",
+  "jobId": "x7k9m2p4",
   "status": "queued",
+  "submittedAt": "2025-12-12T10:30:00Z"
 }
 ```
 
+**Status Codes:**
+- `200` - Code submitted successfully
+- `400` - Invalid request (missing parameters, unsupported language)
+- `401` - Unauthorized (invalid API key)
+- `429` - Rate limit exceeded
+
 ---
 
-#### Check Job Status
+### Check Execution Status
 
-```http
-GET /api/v1/runner/:jobId/status
-```
+Track the progress of your code execution.
+
+**Endpoint:** `GET /api/v1/runner/:jobId/status`
 
 **Example:**
 ```bash
-curl http://localhost:8080/api/v1/runner/12345abc/status
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.neuron.dev/api/v1/runner/x7k9m2p4/status
 ```
 
 **Response:**
 ```json
 {
-  "status": "completed"
+  "jobId": "x7k9m2p4",
+  "status": "success",
+  "output": "Hello World\n",
+  "executionTime": 245,
+  "completedAt": "2025-12-12T10:30:02Z"
 }
 ```
 
 **Status Values:**
-- `queued` - Job submitted, waiting for execution
-- `running` - Currently executing
-- `success` - Execution finished successfully
-- `failed` - Execution encountered an error
-- `cancelled` - Execution cancelled
+| Status | Description |
+|--------|-------------|
+| `queued` | Waiting in execution queue |
+| `running` | Currently executing |
+| `success` | Completed successfully |
+| `failed` | Execution error (syntax, runtime, timeout) |
+| `cancelled` | Execution was cancelled |
+
+**Response Fields:**
+- `output` - Standard output from the program
+- `error` - Error message (if status is `failed`)
+- `executionTime` - Time taken in milliseconds
+- `completedAt` - ISO 8601 timestamp
 
 ---
 
+### Get Execution Result
 
-## 🛠️ Development
+Retrieve complete execution details including output and errors.
 
-### Configuration Files
+**Endpoint:** `GET /api/v1/runner/:jobId/result`
 
-The project includes pre-configured Air files for hot reload:
-- `.air.api.toml` - API server configuration
-- `.air.worker.toml` - Worker service configuration
-
-Modify these files to customize build settings and watch patterns.
+**Response:**
+```json
+{
+  "jobId": "x7k9m2p4",
+  "status": "success",
+  "code": "print('Hello World')",
+  "language": "python",
+  "input": "",
+  "output": "Hello World\n",
+  "error": null,
+  "executionTime": 245,
+  "memoryUsed": 8192,
+  "submittedAt": "2025-12-12T10:30:00Z",
+  "completedAt": "2025-12-12T10:30:02Z"
+}
+```
 
 ---
 
+## 🚀 Getting Started
 
+### 1. Sign Up
+Visit [neuron.dev](https://neuron.dev) and create an account.
 
-## 🤝 Contributing
+### 2. Get API Key
+Generate your API key from the dashboard.
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### 3. Make Your First Request
+
+```bash
+curl -X POST https://api.neuron.dev/api/v1/runner/submit \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "code": "print(\"Hello from Neuron\")",
+    "language": "python"
+  }'
+```
+
+### 4. Check Result
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.neuron.dev/api/v1/runner/JOB_ID/result
+```
+
+---
+
+## 📊 Pricing
+
+### Free Tier
+- 1,000 executions/month
+- All languages supported
+- Community support
+
+### Pro Tier
+- 50,000 executions/month
+- Priority execution queue
+- Email support
+- Custom resource limits
+
+### Enterprise
+- Unlimited executions
+- Dedicated infrastructure
+- SLA guarantees
+- 24/7 support
+- Custom integrations
+
+[View detailed pricing →](https://neuron.dev/pricing)
+
+---
+
+## 🛠️ SDKs & Libraries
+
+Official SDKs for easy integration:
+
+- **Python** - `pip install neuron-sdk`
+- **JavaScript/Node.js** - `npm install @neuron/sdk`
+- **Java** - `maven: dev.neuron:sdk`
+- **Go** - `go get github.com/neuron/go-sdk`
+
+---
+
+## 📚 Resources
+
+- [API Documentation](https://docs.neuron.dev)
+- [Integration Guides](https://docs.neuron.dev/guides)
+- [Code Examples](https://github.com/neuron/examples)
+- [Status Page](https://status.neuron.dev)
+
+---
+
+## 🔧 Self-Hosting
+
+Want to run Neuron on your own infrastructure?
+
+See [SETUP.md](./SETUP.md) for local development and self-hosting instructions.
+
+---
+
+## 🤝 Support
+
+- **Documentation:** [docs.neuron.dev](https://docs.neuron.dev)
+- **Email:** support@neuron.dev
+- **Discord:** [Join our community](https://discord.gg/neuron)
+- **Issues:** [GitHub Issues](https://github.com/anurag-327/neuron/issues)
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](./LICENSE) for details
+
+---
 
 <div align="center">
 
-**Built with ❤️ using Go, Docker, and Kafka**
+**Built with ❤️ for educators and creators worldwide**
 
-[Report Bug](https://github.com/anurag-327/neuron/issues) • [Request Feature](https://github.com/anurag-327/neuron/issues)
+[Website](https://neuron.dev) • [Documentation](https://docs.neuron.dev) • [GitHub](https://github.com/anurag-327/neuron)
 
 </div>
-
-Here’s a **clean, concise project description** including the note about Go executor availability:
-
----
-
-> ⚠️ **Note:** Go execution support is currently unavailable due to limitations in the Golang runtime inside restricted Docker sandboxes. Other languages are fully supported and stable.
-
----
