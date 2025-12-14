@@ -4,18 +4,20 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/anurag-327/neuron/conn"
+	"github.com/anurag-327/neuron/internal/models"
 	"github.com/anurag-327/neuron/internal/util"
-	"github.com/anurag-327/neuron/pkg/sandbox"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
+// Runner is responsible for executing user-submitted code
+// inside an already running (pooled) Docker container.
 type Runner struct {
 	client *conn.DockerClient
 }
@@ -24,128 +26,312 @@ func NewRunner(client *conn.DockerClient) *Runner {
 	return &Runner{client: client}
 }
 
-// -----------------------------------------------------------------------------
+// RunResult represents the final outcome of a sandbox execution.
 //
-//	Run: Executes code in Docker Sandbox
+// ContainerDirty:
+//   - true  → container must be destroyed & replaced
+//   - false → container can be safely reused
+type RunResult struct {
+	Stdout         string
+	Stderr         string
+	ErrType        models.SandboxError
+	ErrMsg         string
+	ContainerDirty bool
+}
+
+// ------------------------------------------------------------
+// Run
+// ------------------------------------------------------------
 //
-// -----------------------------------------------------------------------------
+// High-level execution flow:
 //
-//	Returns:
-//	  stdout, stderr, errType, errMessage
+// 1. Create a per-job directory on the HOST
+// 2. Write user code + input into that directory
+// 3. Execute code inside container using docker exec
+// 4. Enforce TIME LIMIT using BusyBox `timeout` (inside container)
+// 5. Use Go context timeout ONLY as a safety net
+// 6. Classify result (TLE / MLE / RE / OK)
 //
-// -----------------------------------------------------------------------------
+// IMPORTANT TIMEOUT DESIGN:
+//
+//		inner timeout  <  Go exec timeout
+//	 Container is dirty only when go looses control over it and not when program times out correctly
+//
+// Example:
+//
+//	inner timeout = 2s   (authoritative TLE decision)
+//	Go timeout    = 3s   (safety / cleanup)
+//
+// Exit-code policy (documented by design):
+//
+//	124 → timeout exited normally (TLE)
+//	137 → SIGKILL (treated as TLE in this design)
+//	139 → SIGSEGV (MLE)
 func (d *Runner) Run(
 	ctx context.Context,
 	containerID,
 	basePathString, code, input, language string,
-) (string, string, sandbox.SandboxError, string) {
+) RunResult {
 
-	// 1️ Create job directory on HOST
+	log := func(format string, args ...any) {
+		fmt.Printf("[RUN] "+format+"\n", args...)
+	}
+
+	result := RunResult{}
+
+	log("START | container=%s language=%s", containerID, language)
+
+	// ========================================================
+	// 1 Create job directory on HOST
+	// ========================================================
 	projectRoot, _ := os.Getwd()
 	basePath := filepath.Join(projectRoot, basePathString)
 
+	log("Creating job directory: %s", basePath)
+
 	if err := os.MkdirAll(basePath, 0755); err != nil {
-		log.Println("[RUN] failed to create job dir:", err)
-		return "", "", sandbox.ErrInternalError, "Failed to create job directory"
+		log("ERROR creating job dir: %v", err)
+		result.ErrType = models.ErrInternalError
+		result.ErrMsg = "Failed to create job directory"
+		return result
 	}
-	defer util.DeleteFolder(basePath)
 
-	log.Println("[RUN] job dir:", basePath)
+	defer func() {
+		log("Deleting job directory: %s", basePath)
+		util.DeleteFolder(basePath)
+	}()
 
-	// 2️ Load language config
-	languageConfig, err := GetLanguageConfig(language)
+	// ========================================================
+	// 2 Load language configuration
+	// ========================================================
+	log("Loading language config: %s", language)
+
+	langCfg, err := GetLanguageConfig(language)
 	if err != nil {
-		log.Println("[RUN] unsupported language:", language)
-		return "", "", sandbox.ErrInternalError, "Unsupported language"
+		log("ERROR unsupported language")
+		result.ErrType = models.ErrInternalError
+		result.ErrMsg = "Unsupported language"
+		return result
 	}
 
-	names := BuildFileNames(basePath, languageConfig)
+	names := BuildFileNames(basePath, langCfg)
 
-	// 3 Write code + input files
+	// ========================================================
+	// 3 Write user code and input
+	// ========================================================
+	log("Writing code file: %s", names.PathFull)
+
 	if err := util.WriteContentToFile(names.PathFull, []byte(code), 0644); err != nil {
-		log.Println("[RUN] failed writing code:", err)
-		return "", "", sandbox.ErrInternalError, "Failed to write code file"
+		log("ERROR writing code: %v", err)
+		result.ErrType = models.ErrInternalError
+		result.ErrMsg = "Failed to write code"
+		return result
 	}
 
-	inputPath := filepath.Join(basePath, "input.txt")
-	if err := util.WriteContentToFile(inputPath, []byte(input), 0644); err != nil {
-		log.Println("[RUN] failed writing input:", err)
-		return "", "", sandbox.ErrInternalError, "Failed to write input file"
+	log("Writing input.txt")
+
+	if err := util.WriteContentToFile(
+		filepath.Join(basePath, "input.txt"),
+		[]byte(input),
+		0644,
+	); err != nil {
+		log("ERROR writing input: %v", err)
+		result.ErrType = models.ErrInternalError
+		result.ErrMsg = "Failed to write input"
+		return result
 	}
 
-	log.Println("[RUN] files written")
-
-	// 4 Build run command (must include < input.txt)
-	runCmd := languageConfig.Cmd(names)
-	log.Println("[RUN] command:", runCmd)
-
-	log.Println("[RUN] using container:", containerID)
-
-	// 6 Translate HOST path → CONTAINER path
-	// IMPORTANT: container must mount /tmp/runner → /sandbox
 	containerJobPath := filepath.Join("/sandbox", filepath.Base(basePath))
+	log("Container job path: %s", containerJobPath)
 
-	log.Println("[RUN] Container Job Path:", basePath, containerJobPath)
+	// ========================================================
+	// 4 Build execution command
+	// ========================================================
+	runCmd := langCfg.Cmd(names)
 
-	// 7 Create docker exec
+	runTimeout := 3 * time.Second
+	execTimeout := 4 * time.Second
+
+	log("Timeouts | run=%s exec=%s", runTimeout, execTimeout)
+	log("Run command: %s", runCmd)
+
 	execCmd := []string{
 		"sh", "-c",
-		fmt.Sprintf("cd %s && %s", containerJobPath, runCmd),
+		fmt.Sprintf(
+			"cd %s && timeout -s KILL %ds sh -c '%s'",
+			containerJobPath,
+			int(runTimeout.Seconds()),
+			runCmd,
+		),
 	}
 
-	execCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	// ========================================================
+	// 5 Create docker exec (NO timeout here)
+	// ========================================================
+	log("Creating docker exec")
+
+	execResp, err := d.client.Client.ContainerExecCreate(
+		context.Background(),
+		containerID,
+		container.ExecOptions{
+			Cmd:          execCmd,
+			AttachStdout: true,
+			AttachStderr: true,
+		},
+	)
+	if err != nil {
+		log("ERROR exec create failed: %v", err)
+		result.ErrType = models.ErrSandboxError
+		result.ErrMsg = "Exec create failed"
+		result.ContainerDirty = true
+		return result
+	}
+
+	log("Exec created: %s", execResp.ID)
+
+	// ========================================================
+	// 6 Attach to exec & wait with Go timeout
+	// ========================================================
+	execCtx, cancel := context.WithTimeout(ctx, execTimeout)
 	defer cancel()
 
-	execResp, err := d.client.Client.ContainerExecCreate(execCtx, containerID, container.ExecOptions{
-		Cmd:          execCmd,
-		AttachStdout: true,
-		AttachStderr: true,
-		AttachStdin:  false,
-	})
-	if err != nil {
-		log.Println("[RUN] exec create failed:", err)
-		return "", "", sandbox.ErrSandboxError, "Exec create failed"
-	}
+	deadline, _ := execCtx.Deadline()
+	log("Attaching to exec | deadline=%v", deadline)
 
-	attach, err := d.client.Client.ContainerExecAttach(execCtx, execResp.ID, container.ExecStartOptions{})
+	attach, err := d.client.Client.ContainerExecAttach(
+		execCtx,
+		execResp.ID,
+		container.ExecStartOptions{},
+	)
 	if err != nil {
-		log.Println("[RUN] exec attach failed:", err)
-		return "", "", sandbox.ErrSandboxError, "Exec attach failed"
+		log("ERROR exec attach failed: %v", err)
+		result.ErrType = models.ErrSandboxError
+		result.ErrMsg = "Exec attach failed"
+		result.ContainerDirty = true
+		return result
 	}
 	defer attach.Close()
 
-	// 8 Read stdout / stderr from EXEC
 	var stdoutBuf, stderrBuf bytes.Buffer
-
 	done := make(chan error, 1)
+
 	go func() {
+		log("Started stdout/stderr reader")
 		_, err := stdcopy.StdCopy(&stdoutBuf, &stderrBuf, attach.Reader)
 		done <- err
 	}()
 
+	// ========================================================
+	// 7 Wait for completion OR Go-side timeout
+	// ========================================================
 	select {
+
 	case <-execCtx.Done():
-		log.Println("[RUN] TLE reached")
-		return "", "", sandbox.ErrTLE, sandbox.MsgTLE
+		log("GO TIMEOUT HIT | err=%v", execCtx.Err())
+
+		result.ErrType = models.ErrTLE
+		result.ErrMsg = models.MsgTLE
+		result.ContainerDirty = true
+		return result
 
 	case err := <-done:
+		log("Exec finished | reader err=%v", err)
 		if err != nil {
-			log.Println("[RUN] exec output read failed:", err)
-			return "", "", sandbox.ErrSandboxError, "Failed reading exec output"
+			result.ErrType = models.ErrSandboxError
+			result.ErrMsg = "Output read failed"
+			result.ContainerDirty = true
+			return result
 		}
 	}
 
-	stdout := stdoutBuf.String()
-	stderr := stderrBuf.String()
+	result.Stdout = stdoutBuf.String()
+	result.Stderr = stderrBuf.String()
 
-	log.Println("[RUN] stdout:", stdout)
-	log.Println("[RUN] stderr:", stderr)
+	log("Captured output | stdout=%dB stderr=%dB",
+		len(result.Stdout), len(result.Stderr))
 
-	// 9 Error classification
-	errType, errMsg := DetectError(language, stdout, stderr)
-	if errType != "" {
-		return stdout, stderr, errType, errMsg
+	// ========================================================
+	// 8 Inspect exit code for classification
+	// ========================================================
+	inspect, _ := d.client.Client.ContainerExecInspect(
+		context.Background(),
+		execResp.ID,
+	)
+
+	log("Final inspect | pid=%d exit=%d",
+		inspect.Pid, inspect.ExitCode)
+
+	// MLE detection
+	if inspect.ExitCode == 139 ||
+		strings.Contains(result.Stderr, "Cannot allocate memory") ||
+		strings.Contains(result.Stderr, "Out of memory") {
+
+		log("Detected MLE")
+
+		result.ErrType = models.ErrMLE
+		result.ErrMsg = models.MsgMLE
+		result.ContainerDirty = false
+		return result
 	}
 
-	return stdout, stderr, "", ""
+	// TLE detection
+	if inspect.ExitCode == 124 || inspect.ExitCode == 137 {
+
+		log("Detected TLE via exit code")
+
+		result.ErrType = models.ErrTLE
+		result.ErrMsg = models.MsgTLE
+		result.ContainerDirty = false
+		return result
+	}
+
+	// Language-level runtime errors
+	if errType, errMsg := DetectError(language, result.Stdout, result.Stderr); errType != "" {
+		log("Detected language error: %s", errType)
+		result.ErrType = errType
+		result.ErrMsg = errMsg
+		return result
+	}
+
+	log("Execution completed successfully")
+	return result
+}
+
+// ------------------------------------------------------------
+// killExecProcess
+// ------------------------------------------------------------
+//
+// Kills the entire process group of the exec PID.
+// This prevents child processes / fork bombs.
+func (d *Runner) killExecProcess(ctx context.Context, containerID string, pID int) error {
+
+	fmt.Printf("[RUN] killExecProcess | pid=%d\n", pID)
+
+	if pID <= 0 {
+		fmt.Println("[RUN] killExecProcess skipped (pid<=0)")
+		return nil
+	}
+
+	killCmd := []string{
+		"sh", "-c",
+		fmt.Sprintf("kill -9 -%d || true", pID),
+	}
+
+	execResp, err := d.client.Client.ContainerExecCreate(
+		ctx,
+		containerID,
+		container.ExecOptions{Cmd: killCmd},
+	)
+	if err != nil {
+		fmt.Printf("[RUN] killExec create failed: %v\n", err)
+		return err
+	}
+
+	fmt.Printf("[RUN] killExec created: %s\n", execResp.ID)
+
+	return d.client.Client.ContainerExecStart(
+		ctx,
+		execResp.ID,
+		container.ExecStartOptions{},
+	)
 }

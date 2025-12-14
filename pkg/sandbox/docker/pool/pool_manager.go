@@ -53,7 +53,7 @@ func (pm *PoolManager) Register(language string, cfg PoolConfig) {
 // cold-start latency during execution.
 func (pm *PoolManager) InitAll(ctx context.Context) error {
 	for lang, p := range pm.pools {
-		log.Printf("🔥 Pre-warming container pool for %s...", lang)
+		log.Printf("Pre-warming container pool for %s...", lang)
 
 		if err := p.WarmUp(ctx); err != nil {
 			return err
@@ -170,7 +170,7 @@ func (p *ContainerPool) Put(id string) {
 	}
 
 	// Scale down
-	log.Printf("📉 Scaling down pool for %s (%d → %d)",
+	log.Printf("Scaling down pool for %s (%d → %d)",
 		p.lang, p.total, p.total-1)
 
 	p.total--
@@ -204,9 +204,10 @@ func (p *ContainerPool) newContainer(ctx context.Context) (string, error) {
 		&container.HostConfig{
 			Mounts: []mount.Mount{
 				{Type: mount.TypeBind, Source: absPath, Target: "/sandbox"},
-				{Type: mount.TypeTmpfs, Target: "/tmp"},
 			},
-			NetworkMode: "none",
+			Tmpfs:          map[string]string{"/tmp": "rw,noexec,nosuid,size=64m"},
+			ReadonlyRootfs: true,
+			NetworkMode:    "none",
 		},
 		nil, nil, "",
 	)
@@ -232,9 +233,9 @@ func (p *ContainerPool) newContainer(ctx context.Context) (string, error) {
 //   - The removal is forced to ensure no leaked containers.
 //   - If replacement fails, the pool may temporarily run with
 //     reduced capacity until the next scaling or health cycle.
-func (p *ContainerPool) replaceContainer(id string) {
+func (p *ContainerPool) ReplaceContainer(id string) {
 	// Container is unhealthy → remove it from the system
-	log.Printf("❌ Unhealthy container removed: %s", id)
+	log.Printf("Unhealthy container removed: %s", id)
 
 	_ = p.client.ContainerRemove(
 		context.Background(),
@@ -243,13 +244,13 @@ func (p *ContainerPool) replaceContainer(id string) {
 	)
 
 	// Attempt to spawn a replacement container to maintain pool capacity
-	log.Printf("🔁 Spawning a replacement container")
+	log.Printf("Spawning a replacement container")
 
 	newID, err := p.newContainer(context.Background())
 	if err != nil {
 		// Replacement failure is non-fatal; capacity will be
 		// restored by future scaling or health-check cycles
-		log.Printf("⚠️ Failed to spawn replacement container: %v", err)
+		log.Printf("Failed to spawn replacement container: %v", err)
 		return
 	}
 

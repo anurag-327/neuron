@@ -7,7 +7,6 @@ import (
 	"os"
 	"sync"
 
-	sandboxUtil "github.com/anurag-327/neuron/internal/util/sandbox"
 	"github.com/anurag-327/neuron/pkg/messaging"
 	kafkaConsumer "github.com/anurag-327/neuron/pkg/messaging/consumer/kafka"
 	redisConsumer "github.com/anurag-327/neuron/pkg/messaging/consumer/redis"
@@ -83,7 +82,7 @@ func GetSubscriber(group string, topic string) (messaging.Subscriber, error) {
 	return s, err
 }
 
-func StartConsumer(ctx context.Context, topic string, group string, maxConcurrent int) error {
+func StartConsumer(ctx context.Context, topic string, group string, maxConcurrent int, handler func(jobBytes []byte) error) error {
 	sub, err := GetSubscriber(group, topic)
 	if err != nil {
 		return err
@@ -91,9 +90,9 @@ func StartConsumer(ctx context.Context, topic string, group string, maxConcurren
 
 	go func(sub messaging.Subscriber) {
 		defer sub.Close()
-		sub.ConsumeControlled(ctx, sandboxUtil.ExecuteCode, maxConcurrent)
+		sub.ConsumeControlled(ctx, handler, maxConcurrent)
 	}(sub)
 
-	log.Printf("🚀 Worker listening on topic: %s", topic)
+	log.Printf("Worker listening on topic: %s", topic)
 	return nil
 }

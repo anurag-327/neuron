@@ -10,6 +10,7 @@ import (
 
 	"github.com/anurag-327/neuron/conn"
 	"github.com/anurag-327/neuron/internal/factory"
+	"github.com/anurag-327/neuron/pkg/sandbox"
 	"github.com/anurag-327/neuron/pkg/sandbox/docker"
 	"github.com/anurag-327/neuron/pkg/sandbox/docker/pool"
 	"github.com/joho/godotenv"
@@ -37,7 +38,7 @@ func main() {
 	}
 
 	// Start consumer worker
-	if err := factory.StartConsumer(ctx, "code-jobs", "code-runner-group", 1000); err != nil {
+	if err := factory.StartConsumer(ctx, "code-jobs", "code-runner-group", 1000, sandbox.ExecuteCode); err != nil {
 		log.Fatalf("Failed to start consumer: %v", err)
 	}
 

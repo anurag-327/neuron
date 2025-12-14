@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/anurag-327/neuron/pkg/sandbox"
+	"github.com/anurag-327/neuron/internal/models"
 )
 
 //  Language metadata (single source of truth)
@@ -89,7 +89,7 @@ func BuildFileNames(basePath string, cfg LangConfig) FileNames {
 		PathFull: filepath.Join(basePath, full),
 	}
 }
-func DetectError(language, stdout, stderr string) (sandbox.SandboxError, string) {
+func DetectError(language, stdout, stderr string) (models.SandboxError, string) {
 
 	s := stderr
 	c := stdout + "\n" + stderr // Some runtime errors print to stdout
@@ -100,7 +100,7 @@ func DetectError(language, stdout, stderr string) (sandbox.SandboxError, string)
 		if strings.Contains(s, "error:") ||
 			strings.Contains(s, "fatal error:") ||
 			strings.Contains(s, "undefined reference") {
-			return sandbox.ErrCompilationError, sandbox.MsgCompilationError
+			return models.ErrCompilationError, models.MsgCompilationError
 		}
 
 		// Runtime crash detection
@@ -108,7 +108,7 @@ func DetectError(language, stdout, stderr string) (sandbox.SandboxError, string)
 			strings.Contains(s, "core dumped") ||
 			strings.Contains(s, "abort") ||
 			strings.Contains(s, "floating point exception") {
-			return sandbox.ErrRuntimeError, sandbox.MsgRuntimeError
+			return models.ErrRuntimeError, models.MsgRuntimeError
 		}
 
 	}
@@ -118,12 +118,12 @@ func DetectError(language, stdout, stderr string) (sandbox.SandboxError, string)
 		if strings.Contains(s, "undefined:") ||
 			strings.Contains(s, "cannot use") ||
 			strings.Contains(s, "no required module") {
-			return sandbox.ErrCompilationError, sandbox.MsgCompilationError
+			return models.ErrCompilationError, models.MsgCompilationError
 		}
 
 		if strings.Contains(c, "panic:") ||
 			strings.Contains(c, "runtime error:") {
-			return sandbox.ErrRuntimeError, sandbox.MsgRuntimeError
+			return models.ErrRuntimeError, models.MsgRuntimeError
 		}
 	}
 
@@ -131,11 +131,11 @@ func DetectError(language, stdout, stderr string) (sandbox.SandboxError, string)
 	if language == "python" {
 		if strings.Contains(s, "SyntaxError") ||
 			strings.Contains(s, "IndentationError") {
-			return sandbox.ErrCompilationError, sandbox.MsgCompilationError
+			return models.ErrCompilationError, models.MsgCompilationError
 		}
 
 		if strings.Contains(c, "Traceback (most recent call last):") {
-			return sandbox.ErrRuntimeError, sandbox.MsgRuntimeError
+			return models.ErrRuntimeError, models.MsgRuntimeError
 		}
 	}
 
@@ -144,24 +144,24 @@ func DetectError(language, stdout, stderr string) (sandbox.SandboxError, string)
 		if strings.Contains(s, "error:") ||
 			strings.Contains(s, "cannot find symbol") ||
 			strings.Contains(s, "symbol not found") {
-			return sandbox.ErrCompilationError, sandbox.MsgCompilationError
+			return models.ErrCompilationError, models.MsgCompilationError
 		}
 
 		if strings.Contains(c, "Exception in thread") {
-			return sandbox.ErrRuntimeError, sandbox.MsgRuntimeError
+			return models.ErrRuntimeError, models.MsgRuntimeError
 		}
 	}
 
 	// JavaScript (Node.js)
 	if language == "js" {
 		if strings.Contains(s, "SyntaxError:") {
-			return sandbox.ErrCompilationError, sandbox.MsgCompilationError
+			return models.ErrCompilationError, models.MsgCompilationError
 		}
 
 		if strings.Contains(c, "TypeError:") ||
 			strings.Contains(c, "ReferenceError:") ||
 			strings.Contains(c, "UnhandledPromiseRejectionWarning") {
-			return sandbox.ErrRuntimeError, sandbox.MsgRuntimeError
+			return models.ErrRuntimeError, models.MsgRuntimeError
 		}
 	}
 
@@ -169,7 +169,7 @@ func DetectError(language, stdout, stderr string) (sandbox.SandboxError, string)
 	// Only treat stderr as runtime error if it contains *real* crash signals.
 
 	if isMeaningfulRuntimeErrorGeneric(stderr) {
-		return sandbox.ErrRuntimeError, sandbox.MsgRuntimeError
+		return models.ErrRuntimeError, models.MsgRuntimeError
 	}
 
 	// Everything OK

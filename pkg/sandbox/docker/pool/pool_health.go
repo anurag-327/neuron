@@ -52,7 +52,7 @@ func (p *ContainerPool) checkAll() {
 			healthy++
 			continue
 		} else {
-			p.replaceContainer(id)
+			p.ReplaceContainer(id)
 		}
 	}
 

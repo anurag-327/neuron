@@ -12,7 +12,7 @@ import (
 //
 // This function should be invoked once during application startup.
 func InitDockerPool(ctx context.Context) error {
-	log.Println("🔥 Initializing sandbox container pools...")
+	log.Println("Initializing sandbox container pools...")
 
 	for _, cfg := range config.DockerPools() {
 		pool.Manager.Register(cfg.Language, pool.PoolConfig{
@@ -28,6 +28,6 @@ func InitDockerPool(ctx context.Context) error {
 		return err
 	}
 
-	log.Println(" Container pools warmed and ready!")
+	log.Println("Container pools warmed and ready!")
 	return nil
 }
