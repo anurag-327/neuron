@@ -9,6 +9,7 @@ import (
 func RegisterUserRoutes(router *gin.RouterGroup) {
 	authRouter := router.Group("/user")
 	{
-		authRouter.GET("/me",middleware.VerifyTokenMiddleware(), userHandler.GetUserHandler)
+		authRouter.GET("/me", middleware.VerifyTokenMiddleware(), userHandler.GetUserHandler)
+		authRouter.GET("/stats", middleware.VerifyTokenMiddleware(), userHandler.GetUserStatsHandler)
 	}
 }

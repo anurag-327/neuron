@@ -10,6 +10,7 @@ import (
 	"github.com/anurag-327/neuron/config"
 	"github.com/anurag-327/neuron/internal/models"
 	"github.com/anurag-327/neuron/internal/repository"
+	"github.com/anurag-327/neuron/internal/services"
 	"github.com/anurag-327/neuron/internal/util"
 	"github.com/anurag-327/neuron/internal/util/response"
 	"github.com/gin-gonic/gin"
@@ -99,12 +100,18 @@ func GoogleLoginInController(c *gin.Context) {
 				Username:     strings.Split(email, "@")[0],
 				Name:         name,
 				ImageUrl:     &profilePhoto,
-				Credits:      models.DefaultSignupCredits,
+				Credits:      0,
 			}
 
 			newUser, err = repository.SaveUser(ctx, newUser)
 			if err != nil {
 				response.Error(c, http.StatusInternalServerError, "Failed to create user")
+				return
+			}
+
+			err = services.CreditUserAndLog(ctx, newUser.ID, models.DefaultSignupCredits, models.CreditReasonSignupBonus, nil, nil)
+			if err != nil {
+				response.Error(c, http.StatusInternalServerError, "Failed to credit user")
 				return
 			}
 
@@ -184,12 +191,18 @@ func GithubLoginInController(c *gin.Context) {
 				Username:     strings.Split(email, "@")[0],
 				Name:         name,
 				ImageUrl:     &profilePhoto,
-				Credits:      models.DefaultSignupCredits,
+				Credits:      0,
 			}
 
 			newUser, err = repository.SaveUser(ctx, newUser)
 			if err != nil {
 				response.Error(c, http.StatusInternalServerError, "Failed to create user")
+				return
+			}
+
+			err = services.CreditUserAndLog(ctx, newUser.ID, models.DefaultSignupCredits, models.CreditReasonSignupBonus, nil, nil)
+			if err != nil {
+				response.Error(c, http.StatusInternalServerError, "Failed to credit user")
 				return
 			}
 

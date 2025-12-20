@@ -36,6 +36,14 @@ const (
 	MsgInternalError    = "Internal Error: something went wrong on the server."
 )
 
+// JobStats represents aggregated job execution statistics
+type JobStats struct {
+	TotalExecutedJobs int64   `json:"totalExecutedJobs"`
+	AvgExecutionMs    float64 `json:"avgExecutionMs"`
+	SuccessJobs       int64   `json:"successJobs"`
+	FailedJobs        int64   `json:"failedJobs"`
+}
+
 type Job struct {
 	mgm.DefaultModel `bson:",inline"`
 

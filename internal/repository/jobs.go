@@ -91,7 +91,10 @@ func GetJobsByUserID(ctx context.Context, userID primitive.ObjectID, page, limit
 	cursor, err := coll.Find(
 		ctx,
 		bson.M{"userId": userID},
-		options.Find().SetSkip(skip).SetLimit(limit),
+		options.Find().
+			SetSort(bson.M{"created_at": -1}).
+			SetSkip(skip).
+			SetLimit(limit),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get jobs: %w", err)
@@ -102,4 +105,97 @@ func GetJobsByUserID(ctx context.Context, userID primitive.ObjectID, page, limit
 		return nil, fmt.Errorf("failed to decode jobs: %w", err)
 	}
 	return jobs, nil
+}
+
+func CountJobsByUserID(ctx context.Context, userID primitive.ObjectID) (int64, error) {
+	coll := mgm.Coll(&models.Job{})
+	count, err := coll.CountDocuments(ctx, bson.M{"userId": userID})
+	if err != nil {
+		return 0, fmt.Errorf("failed to count jobs: %w", err)
+	}
+	return count, nil
+}
+
+// GetJobStatsByUserID aggregates job statistics for a user within a date range
+func GetJobStatsByUserID(
+	ctx context.Context,
+	userID primitive.ObjectID,
+	startDate, endDate primitive.DateTime,
+) (*models.JobStats, error) {
+
+	coll := mgm.Coll(&models.Job{})
+	matchFilter := bson.M{"userId": userID}
+
+	// Date filter
+	if startDate > 0 || endDate > 0 {
+		dateFilter := bson.M{}
+		if startDate > 0 {
+			dateFilter["$gte"] = startDate
+		}
+		if endDate > 0 {
+			dateFilter["$lte"] = endDate
+		}
+		// Assuming we care about when the job finished for stats
+		matchFilter["finishedAt"] = dateFilter
+	}
+	// Also ensure job is finished
+	matchFilter["status"] = bson.M{"$in": bson.A{models.StatusSuccess, models.StatusFailed, models.StatusQueued, models.StatusRunning}}
+	// Actually for "executed" stats we probably only want Success/Failed
+	matchFilter["status"] = bson.M{"$in": bson.A{models.StatusSuccess, models.StatusFailed}}
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: matchFilter}},
+		{{Key: "$group", Value: bson.M{
+			"_id":               nil,
+			"totalExecutedJobs": bson.M{"$sum": 1},
+			"successJobs": bson.M{
+				"$sum": bson.M{
+					"$cond": bson.A{
+						bson.M{"$eq": bson.A{"$status", models.StatusSuccess}},
+						1,
+						0,
+					},
+				},
+			},
+			"failedJobs": bson.M{
+				"$sum": bson.M{
+					"$cond": bson.A{
+						bson.M{"$eq": bson.A{"$status", models.StatusFailed}},
+						1,
+						0,
+					},
+				},
+			},
+			"avgExecutionMs": bson.M{
+				"$avg": bson.M{"$subtract": bson.A{"$finishedAt", "$startedAt"}},
+			},
+		}}},
+	}
+
+	cursor, err := coll.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, fmt.Errorf("failed to aggregate job stats: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var results []struct {
+		TotalExecutedJobs int64   `bson:"totalExecutedJobs"`
+		SuccessJobs       int64   `bson:"successJobs"`
+		FailedJobs        int64   `bson:"failedJobs"`
+		AvgExecutionMs    float64 `bson:"avgExecutionMs"`
+	}
+
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, fmt.Errorf("failed to decode job stats: %w", err)
+	}
+
+	stats := &models.JobStats{}
+	if len(results) > 0 {
+		stats.TotalExecutedJobs = results[0].TotalExecutedJobs
+		stats.SuccessJobs = results[0].SuccessJobs
+		stats.FailedJobs = results[0].FailedJobs
+		stats.AvgExecutionMs = results[0].AvgExecutionMs
+	}
+
+	return stats, nil
 }

@@ -12,5 +12,6 @@ func RegisterLogsRoutes(router *gin.RouterGroup) {
 		logsRouter.GET("/api", middleware.VerifyTokenMiddleware(), logsHandler.GetApiLogsHandler)
 		logsRouter.GET("/jobs", middleware.VerifyTokenMiddleware(), logsHandler.GetJobLogsHandler)
 		logsRouter.GET("/credits", middleware.VerifyTokenMiddleware(), logsHandler.GetCreditLogsHandler)
+		logsRouter.GET("/recent-activity", middleware.VerifyTokenMiddleware(), logsHandler.GetRecentActivityHandler)
 	}
 }

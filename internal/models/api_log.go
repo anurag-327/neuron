@@ -20,6 +20,17 @@ const (
 	RequestError    RequestStatus = "error"
 )
 
+// ApiStats represents aggregated API request statistics
+type ApiStats struct {
+	TotalRequests   int64            `json:"totalRequests"`
+	SuccessRequests int64            `json:"successRequests"`
+	FailedRequests  int64            `json:"failedRequests"`
+	ErrorRequests   int64            `json:"errorRequests"`
+	ByEndpoint      map[string]int64 `json:"byEndpoint"`
+	ByStatus        map[string]int64 `json:"byStatus"`
+	SuccessRate     float64          `json:"successRate"`
+}
+
 type ApiLog struct {
 	mgm.DefaultModel `bson:",inline"`
 
