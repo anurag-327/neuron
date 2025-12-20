@@ -24,6 +24,9 @@ func init() {
 	config.JwtSecret = []byte(os.Getenv("JWT_SECRET"))
 	conn.ConnectMongoDB()
 	models.CreateUserIndexes()
+	models.CreateCreditTransactionIndexes()
+	models.CreateJobIndexes()
+	models.CreateApiLogIndexes()
 }
 
 func main() {

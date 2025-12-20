@@ -3,5 +3,5 @@ kafka-topics --help
 kafka-topics --list --bootstrap-server localhost:9092
 
 kafka-topics --create \
-  --topic code-jobs \
+  --topic execution-tasks \
   --bootstrap-server localhost:9092

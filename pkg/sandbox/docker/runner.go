@@ -11,7 +11,8 @@ import (
 
 	"github.com/anurag-327/neuron/conn"
 	"github.com/anurag-327/neuron/internal/models"
-	"github.com/anurag-327/neuron/internal/util"
+	"github.com/anurag-327/neuron/internal/registry"
+	fileUtils "github.com/anurag-327/neuron/internal/util/file"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
 )
@@ -98,7 +99,7 @@ func (d *Runner) Run(
 
 	defer func() {
 		log("Deleting job directory: %s", basePath)
-		util.DeleteFolder(basePath)
+		fileUtils.DeleteFolder(basePath)
 	}()
 
 	// ========================================================
@@ -106,8 +107,8 @@ func (d *Runner) Run(
 	// ========================================================
 	log("Loading language config: %s", language)
 
-	langCfg, err := GetLanguageConfig(language)
-	if err != nil {
+	langCfg, ok := registry.LanguageRegistry[language]
+	if !ok {
 		log("ERROR unsupported language")
 		result.ErrType = models.ErrInternalError
 		result.ErrMsg = "Unsupported language"
@@ -121,7 +122,7 @@ func (d *Runner) Run(
 	// ========================================================
 	log("Writing code file: %s", names.PathFull)
 
-	if err := util.WriteContentToFile(names.PathFull, []byte(code), 0644); err != nil {
+	if err := fileUtils.WriteContentToFile(names.PathFull, []byte(code), 0644); err != nil {
 		log("ERROR writing code: %v", err)
 		result.ErrType = models.ErrInternalError
 		result.ErrMsg = "Failed to write code"
@@ -130,7 +131,7 @@ func (d *Runner) Run(
 
 	log("Writing input.txt")
 
-	if err := util.WriteContentToFile(
+	if err := fileUtils.WriteContentToFile(
 		filepath.Join(basePath, "input.txt"),
 		[]byte(input),
 		0644,
@@ -147,7 +148,7 @@ func (d *Runner) Run(
 	// ========================================================
 	// 4 Build execution command
 	// ========================================================
-	runCmd := langCfg.Cmd(names)
+	runCmd := langCfg.RunCmd(names)
 
 	runTimeout := 3 * time.Second
 	execTimeout := 4 * time.Second

@@ -43,7 +43,7 @@ func DockerPools() []DockerPoolConfig {
 			HealthInterval: 20 * time.Second,
 		},
 		{
-			Language:       "js",
+			Language:       "javascript",
 			Image:          "node:22-alpine",
 			InitSize:       1,
 			MaxSize:        2,

@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/anurag-327/neuron/config"
 	"github.com/anurag-327/neuron/conn"
 	"github.com/anurag-327/neuron/internal/factory"
 	"github.com/anurag-327/neuron/pkg/sandbox"
@@ -38,7 +39,7 @@ func main() {
 	}
 
 	// Start consumer worker
-	if err := factory.StartConsumer(ctx, "code-jobs", "code-runner-group", 1000, sandbox.ExecuteCode); err != nil {
+	if err := factory.StartConsumer(ctx, config.ExecutionTasksTopic, config.CodeRunnerConsumerGroup, 1000, sandbox.ExecuteCode); err != nil {
 		log.Fatalf("Failed to start consumer: %v", err)
 	}
 

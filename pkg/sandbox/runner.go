@@ -13,9 +13,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/anurag-327/neuron/config"
 	"github.com/anurag-327/neuron/conn"
 	"github.com/anurag-327/neuron/internal/models"
 	"github.com/anurag-327/neuron/internal/repository"
+	"github.com/anurag-327/neuron/internal/services"
 	"github.com/anurag-327/neuron/pkg/sandbox/docker"
 	"github.com/anurag-327/neuron/pkg/sandbox/docker/pool"
 )
@@ -175,32 +177,31 @@ func ExecuteCode(jobBytes []byte) error {
 		return err
 	}
 
+	if runResult.ErrType == "" {
+		executionTime := job.FinishedAt.Sub(job.StartedAt)
+		queueTime := job.StartedAt.Sub(job.QueuedAt)
+		totalTime := job.FinishedAt.Sub(job.QueuedAt)
+		amount := config.GetCreditsForReason(models.CreditReasonSubmission)
+
+		err = services.DeductCreditsAndLog(
+			ctx,
+			job.UserID,
+			amount,
+			models.CreditReasonSubmission,
+			&job.ID,
+			map[string]interface{}{
+				"language":      job.Language,
+				"executionTime": executionTime,
+				"queueTime":     queueTime,
+				"totalTime":     totalTime,
+			},
+		)
+
+		if err != nil {
+			log.Printf("credit deduction failed for job %s: %v", job.ID.Hex(), err)
+		}
+	}
+
+	_ = services.UpdateApiLog(ctx, job.ID, job.Status, &runResult.ErrType, runResult.ErrMsg, job.StartedAt, job.FinishedAt, job.QueuedAt)
 	return nil
 }
-
-// defer func() {
-// log.Println("[CLEANUP] cleaning container:", containerID)
-
-// // Kill any leftover user processes
-// _, _ = r.Client.ContainerExecCreate(
-// 	context.Background(),
-// 	containerID,
-// 	container.ExecOptions{
-// 		Cmd: []string{
-// 			"sh", "-c",
-// 			"pkill -9 -f main || true; " +
-// 				"pkill -9 -f java || true; " +
-// 				"pkill -9 -f python || true",
-// 		},
-// 	},
-// )
-
-// // Clear temp directory
-// _, _ =r.Client.ContainerExecCreate(
-// 	context.Background(),
-// 	containerID,
-// 	container.ExecOptions{
-// 		Cmd: []string{"sh", "-c", "rm -rf /tmp/*"},
-// 	},
-// )
-// }()

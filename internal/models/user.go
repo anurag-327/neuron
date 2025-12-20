@@ -19,6 +19,8 @@ const (
 	AuthProviderEmail  AuthProvider = "email"
 	RoleTypeUser       RoleType     = "user"
 	RoleTypeAdmin      RoleType     = "Admin"
+
+	DefaultSignupCredits int64 = 100
 )
 
 type User struct {
@@ -31,6 +33,8 @@ type User struct {
 	Role             RoleType `bson:"role,omitempty" json:"role" default:"user"`
 	Verified         bool     `bson:"verified" json:"verified" default:"false"`
 	AuthProvider     string   `bson:"authProvider,omitempty" json:"authProvider,omitempty"`
+
+	Credits int64 `bson:"credits" json:"credits"`
 }
 
 func (u *User) CollectionName() string {

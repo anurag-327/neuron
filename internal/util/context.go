@@ -20,44 +20,36 @@ func GetUserFromContext(c *gin.Context) (*models.User, error) {
 	return user, nil
 }
 
-func GetPageFromQuery(c *gin.Context) (int, error) {
+func GetPageFromQuery(c *gin.Context) int64 {
 	pageStr := c.Query("page")
 	if pageStr == "" {
-		return 1, nil
+		return int64(1)
 	}
 	page, err := strconv.Atoi(pageStr)
-	if err != nil {
-		return 0, errors.New("page must be a number")
+	if err != nil || page <= 0 {
+		return int64(1) // fallback to page 1
 	}
-	if page <= 0 {
-		return 0, errors.New("page must be greater than 0")
-	}
-	return page, nil
+	return int64(page)
 }
 
-func GetLimitFromQuery(c *gin.Context) (int, error) {
+func GetLimitFromQuery(c *gin.Context) int64 {
 	limitStr := c.Query("limit")
 	if limitStr == "" {
-		return 10, nil
+		return int64(10)
 	}
 	limit, err := strconv.Atoi(limitStr)
-	if err != nil {
-		return 0, errors.New("limit must be a number")
+	if err != nil || limit <= 0 {
+		return int64(10) // fallback to default limit
 	}
-	if limit <= 0 {
-		return 0, errors.New("limit must be greater than 0")
+	// enforce maximum limit of 25
+	if limit > 100 {
+		return int64(100)
 	}
-	return limit, nil
+	return int64(limit)
 }
 
-func GetPageAndLimitFromQuery(c *gin.Context) (int, int, error) {
-	page, err := GetPageFromQuery(c)
-	if err != nil {
-		return 0, 0, err
-	}
-	limit, err := GetLimitFromQuery(c)
-	if err != nil {
-		return 0, 0, err
-	}
-	return page, limit, nil
+func GetPageAndLimitFromQuery(c *gin.Context) (int64, int64) {
+	page := GetPageFromQuery(c)
+	limit := GetLimitFromQuery(c)
+	return page, limit
 }

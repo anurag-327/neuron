@@ -2,103 +2,180 @@ package runnerHandler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
-	"time"
 
 	"github.com/anurag-327/neuron/config"
 	"github.com/anurag-327/neuron/internal/dto"
 	"github.com/anurag-327/neuron/internal/factory"
 	"github.com/anurag-327/neuron/internal/models"
+	"github.com/anurag-327/neuron/internal/registry"
 	"github.com/anurag-327/neuron/internal/repository"
+	"github.com/anurag-327/neuron/internal/services"
 	"github.com/anurag-327/neuron/internal/util"
 	"github.com/anurag-327/neuron/internal/util/response"
 	"github.com/gin-gonic/gin"
 )
 
 func SubmitCodeHandler(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	user, err := util.GetUserFromContext(c)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Failed to get user from context")
+		response.Error(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	now := time.Now()
-	ctx := c.Request.Context()
+
+	apiLog := &models.ApiLog{
+		UserID:        user.ID,
+		JobID:         nil,
+		Endpoint:      c.Request.URL.String(),
+		Method:        c.Request.Method,
+		ResponseCode:  http.StatusOK,
+		RequestStatus: "success",
+		Status:        "running",
+		ErrorMessage:  "",
+	}
+
 	var body dto.SubmitCodeBody
 	if err := c.ShouldBindJSON(&body); err != nil {
+		apiLog.ResponseCode = http.StatusBadRequest
+		apiLog.RequestStatus = "failed"
+		apiLog.ErrorMessage = err.Error()
+		apiLog.Status = "failed"
+		_, _ = repository.SaveApiLog(ctx, apiLog)
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	langSupported := false
-	for _, lang := range config.SupportedLanguages {
-		if lang == body.Language {
-			langSupported = true
-			break
-		}
+	// Convert body to JSON string for logging
+	bodyJSON, err := json.Marshal(body)
+	if err != nil {
+		bodyJSON = []byte("{}")
 	}
 
-	if !langSupported {
-		response.Error(c, http.StatusUnauthorized, "language not supported")
+	apiLog.RequestBody = string(bodyJSON)
+
+	// 1 Language supported?
+	langCfg, ok := registry.LanguageRegistry[body.Language]
+	if !ok {
+		apiLog.ResponseCode = http.StatusBadRequest
+		apiLog.RequestStatus = "failed"
+		apiLog.ErrorMessage = "language not supported"
+		apiLog.Status = "failed"
+		_, _ = repository.SaveApiLog(ctx, apiLog)
+		response.Error(c, http.StatusBadRequest, "language not supported")
 		return
 	}
 
-	if body.Language == "cpp" {
-		// Checks on code blocks
-		if err := util.ValidateAndSanitizeCpp(body.Code); err != nil {
-			response.Error(c, http.StatusUnauthorized, err.Error())
+	// 2 Code validation
+	if langCfg.Validator != nil {
+		if err := langCfg.Validator(body.Code); err != nil {
+			apiLog.ResponseCode = http.StatusBadRequest
+			apiLog.RequestStatus = "failed"
+			apiLog.ErrorMessage = err.Error()
+			apiLog.Status = "failed"
+			_, _ = repository.SaveApiLog(ctx, apiLog)
+			response.Error(c, http.StatusBadRequest, err.Error())
 			return
 		}
 	}
 
-	// Save the job in db
-	job := &models.Job{
-		Language: body.Language,
-		Code:     body.Code,
-		Input:    body.Input,
-		Status:   models.StatusQueued,
-		QueuedAt: now,
-		UserID:   user.ID,
-	}
-	job, err = repository.SaveJob(ctx, job)
-	if err != nil {
+	// 3 Credit check
+	if err := services.AssertCanSubmit(ctx, user.ID); err != nil {
+		if errors.Is(err, repository.ErrInsufficientCredits) {
+			apiLog.ResponseCode = http.StatusPaymentRequired
+			apiLog.RequestStatus = "failed"
+			apiLog.Status = "failed"
+			apiLog.ErrorMessage = "insufficient credits"
+			_, _ = repository.SaveApiLog(ctx, apiLog)
+			response.Error(c, http.StatusPaymentRequired, "insufficient credits")
+			return
+		}
+		apiLog.ResponseCode = http.StatusInternalServerError
+		apiLog.RequestStatus = "failed"
+		apiLog.ErrorMessage = err.Error()
+		_, _ = repository.SaveApiLog(ctx, apiLog)
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Publish it to kafka queue
-	jobBytes, err := json.Marshal(job)
+	// 4 Create job
+	job, err := services.CreateSubmission(ctx, user, body)
 	if err != nil {
+		apiLog.ResponseCode = http.StatusInternalServerError
+		apiLog.RequestStatus = "failed"
+		apiLog.Status = "failed"
+		apiLog.ErrorMessage = err.Error()
+		_, _ = repository.SaveApiLog(ctx, apiLog)
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	// 5 Publish job
+	jobBytes, _ := json.Marshal(job)
 	p, err := factory.GetPublisher()
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal Server Error")
+		apiLog.ResponseCode = http.StatusInternalServerError
+		apiLog.RequestStatus = "failed"
+		apiLog.Status = "failed"
+		apiLog.ErrorMessage = "publisher unavailable"
+		_, _ = repository.SaveApiLog(ctx, apiLog)
+		_ = repository.DeleteJob(ctx, job)
+		response.Error(c, http.StatusInternalServerError, "publisher unavailable")
+		return
 	}
-	if err := p.Publish("code-jobs", job.Language, jobBytes); err != nil {
+
+	if err := p.Publish(config.ExecutionTasksTopic, job.Language, jobBytes); err != nil {
+		apiLog.ResponseCode = http.StatusInternalServerError
+		apiLog.RequestStatus = "failed"
+		apiLog.Status = "failed"
+		apiLog.ErrorMessage = err.Error()
+		_, _ = repository.SaveApiLog(ctx, apiLog)
 		_ = repository.DeleteJob(ctx, job)
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "job queued successfully", gin.H{"jobId": job.ID, "status": job.Status})
+	// 6 Update api log
+	apiLog.ResponseCode = http.StatusOK
+	apiLog.RequestStatus = "success"
+	apiLog.Status = "success"
+	apiLog.ErrorMessage = ""
+	apiLog.JobID = &job.ID
+	_, _ = repository.SaveApiLog(ctx, apiLog)
+
+	response.Success(
+		c,
+		http.StatusOK,
+		"job queued successfully",
+		gin.H{"jobId": job.ID, "status": job.Status},
+	)
 }
+
 func GetJobStatusHandler(c *gin.Context) {
+
+	ctx := c.Request.Context()
+
+	user, err := util.GetUserFromContext(c)
+	if err != nil {
+		response.Error(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	jobID := c.Param("jobId")
 	if jobID == "" {
 		response.Error(c, http.StatusBadRequest, "jobId is required")
 		return
 	}
 
-	_, err := util.IsValidObjectID(jobID)
+	objID, err := util.IsValidObjectID(jobID)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Invalid Job ID")
 		return
 	}
 
-	ctx := c.Request.Context()
-
-	job, err := repository.GetJobByID(ctx, jobID)
+	job, err := repository.GetJobByIDAndUserID(ctx, objID, user.ID)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -117,6 +194,7 @@ func GetJobStatusHandler(c *gin.Context) {
 	queueTime := job.StartedAt.Sub(job.QueuedAt)
 	totalTime := job.FinishedAt.Sub(job.QueuedAt)
 
+	util.SetCreditsLeftHeader(c, user.Credits)
 	response.Success(c, http.StatusOK, "job result fetched successfully", gin.H{
 		"jobId":               job.ID,
 		"status":              job.Status,

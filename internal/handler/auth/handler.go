@@ -99,6 +99,7 @@ func GoogleLoginInController(c *gin.Context) {
 				Username:     strings.Split(email, "@")[0],
 				Name:         name,
 				ImageUrl:     &profilePhoto,
+				Credits:      models.DefaultSignupCredits,
 			}
 
 			newUser, err = repository.SaveUser(ctx, newUser)
@@ -183,6 +184,7 @@ func GithubLoginInController(c *gin.Context) {
 				Username:     strings.Split(email, "@")[0],
 				Name:         name,
 				ImageUrl:     &profilePhoto,
+				Credits:      models.DefaultSignupCredits,
 			}
 
 			newUser, err = repository.SaveUser(ctx, newUser)

@@ -1,10 +1,15 @@
 package models
 
 import (
+	"context"
+	"log"
 	"time"
 
 	"github.com/kamva/mgm/v3"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type RunStatus string
@@ -50,4 +55,27 @@ type Job struct {
 	QueuedAt            time.Time     `bson:"queuedAt,omitempty" json:"queued_at,omitempty"`
 
 	User *User `bson:"-" json:"user,omitempty"`
+}
+
+func CreateJobIndexes() error {
+	coll := mgm.Coll(&Job{})
+
+	indexes := []mongo.IndexModel{
+		{
+			Keys: bson.D{
+				{Key: "userId", Value: 1},
+				{Key: "_id", Value: 1},
+			},
+			Options: options.Index().
+				SetName("user_job_compound_idx"),
+		},
+	}
+
+	_, err := coll.Indexes().CreateMany(context.Background(), indexes)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Job indexes created successfully")
+	return nil
 }

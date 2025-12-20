@@ -1,94 +1,13 @@
 package docker
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 
 	"github.com/anurag-327/neuron/internal/models"
+	"github.com/anurag-327/neuron/internal/registry"
 )
 
-//  Language metadata (single source of truth)
-
-type FileNames struct {
-	BaseName string // "main" or "Main"
-	FullName string // "main.cpp"
-	PathBase string // "/host/job/main"
-	PathFull string // "/host/job/main.cpp"
-}
-
-type LangConfig struct {
-	DockerImage string
-	BaseName    string // main, Main
-	Ext         string // cpp, py, java, go, js
-	Cmd         func(n FileNames) string
-}
-
-var Langs = map[string]LangConfig{
-	"cpp": {
-		DockerImage: "gcc:latest",
-		BaseName:    "main",
-		Ext:         "cpp",
-		Cmd: func(n FileNames) string {
-			return fmt.Sprintf("g++ %s -o %s && ./%s < %s",
-				n.FullName, n.BaseName, n.BaseName, "input.txt")
-		},
-	},
-	"go": {
-		DockerImage: "golang:1.23-alpine",
-		BaseName:    "main",
-		Ext:         "go",
-		Cmd: func(n FileNames) string {
-			return fmt.Sprintf("go build -o %s %s && ./%s", n.BaseName, n.FullName, n.BaseName)
-		},
-	},
-
-	"python": {
-		DockerImage: "python:3.12-alpine",
-		BaseName:    "main",
-		Ext:         "py",
-		Cmd: func(n FileNames) string {
-			return fmt.Sprintf("python3 %s < %s", n.FullName, "input.txt")
-		},
-	},
-	"java": {
-		DockerImage: "eclipse-temurin:21-jdk-alpine",
-		BaseName:    "Main",
-		Ext:         "java",
-		Cmd: func(n FileNames) string {
-			return fmt.Sprintf("javac %s && java %s < %s",
-				n.FullName, n.BaseName, "input.txt")
-		},
-	},
-	"js": {
-		DockerImage: "node:22-alpine",
-		BaseName:    "main",
-		Ext:         "js",
-		Cmd: func(n FileNames) string {
-			return fmt.Sprintf("node %s < %s", n.FullName, "input.txt")
-		},
-	},
-}
-
-//  Helper Functions
-
-func GetLanguageConfig(language string) (LangConfig, error) {
-	cfg, ok := Langs[language]
-	if !ok {
-		return LangConfig{}, fmt.Errorf("unsupported language: %s", language)
-	}
-	return cfg, nil
-}
-
-func BuildFileNames(basePath string, cfg LangConfig) FileNames {
-	full := cfg.BaseName + "." + cfg.Ext
-	return FileNames{
-		BaseName: cfg.BaseName,
-		FullName: full,
-		PathBase: filepath.Join(basePath, cfg.BaseName),
-		PathFull: filepath.Join(basePath, full),
-	}
-}
 func DetectError(language, stdout, stderr string) (models.SandboxError, string) {
 
 	s := stderr
@@ -221,4 +140,14 @@ func isMeaningfulRuntimeErrorGeneric(stderr string) bool {
 	}
 
 	return false
+}
+
+func BuildFileNames(basePath string, cfg registry.LanguageConfig) registry.FileNames {
+	full := cfg.BaseName + "." + cfg.Ext
+	return registry.FileNames{
+		BaseName: cfg.BaseName,
+		FullName: full,
+		PathBase: filepath.Join(basePath, cfg.BaseName),
+		PathFull: filepath.Join(basePath, full),
+	}
 }
