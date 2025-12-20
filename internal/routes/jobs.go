@@ -9,7 +9,7 @@ import (
 func RegisterRunnerRoutes(router *gin.RouterGroup) {
 	runnerRouter := router.Group("/runner")
 	{
-		runnerRouter.POST("/submit", middleware.VerifyTokenMiddleware(), runnerHandler.SubmitCodeHandler)
-		runnerRouter.GET("/:jobId/status", middleware.VerifyTokenMiddleware(), runnerHandler.GetJobStatusHandler)
+		runnerRouter.POST("/submit", middleware.HybridAuthMiddleware(), runnerHandler.SubmitCodeHandler)
+		runnerRouter.GET("/:jobId/status", middleware.HybridAuthMiddleware(), runnerHandler.GetJobStatusHandler)
 	}
 }
