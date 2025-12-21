@@ -111,7 +111,7 @@ Track execution metrics, performance trends, and user activity:
 ```bash
 curl -X POST https://api.neuron.dev/api/v1/runner/submit \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "X-API-KEY: nr_live_1234567890abcdef..." \
   -d '{
     "language": "python",
     "code": "print(\"Hello from Neuron!\")",
@@ -141,14 +141,21 @@ curl https://api.neuron.dev/api/v1/runner/job_x7k9m2p4/result \
 ```json
 {
   "success": true,
-  "data": {
-    "jobId": "job_x7k9m2p4",
-    "status": "success",
-    "output": "Hello from Neuron!\n",
-    "executionTime": 245,
-    "queueTime": 12,
-    "language": "python"
-  }
+  "data":{
+        "executionTimeMs": 328,
+        "finishedAt": "2025-12-21T18:46:55.84Z",
+        "jobId": "6948409f41a9fe4b844d6608",
+        "language": "cpp",
+        "queueTimeMs": 4,
+        "queuedAt": "2025-12-21T18:46:55.508Z",
+        "sandboxErrorMessage": "",
+        "sandboxErrorType": null,
+        "startedAt": "2025-12-21T18:46:55.512Z",
+        "status": "success",
+        "stderr": "",
+        "stdout": "Hello, World!",
+        "totalTimeMs": 332
+    }
 }
 ```
 
@@ -201,15 +208,20 @@ Get execution results
 {
   "success": true,
   "data": {
-    "jobId": "job_abc123",
-    "status": "success",           // queued | running | success | failed
-    "output": "Hello\n",           // stdout
-    "error": null,                 // stderr (if failed)
-    "executionTime": 245,          // milliseconds
-    "queueTime": 12,               // milliseconds
-    "language": "python",
-    "createdAt": "2025-12-21T18:00:00Z"
-  }
+        "executionTimeMs": 328,
+        "finishedAt": "2025-12-21T18:46:55.84Z",
+        "jobId": "6948409f41a9fe4b844d6608",
+        "language": "cpp",
+        "queueTimeMs": 4,
+        "queuedAt": "2025-12-21T18:46:55.508Z",
+        "sandboxErrorMessage": "",
+        "sandboxErrorType": null,
+        "startedAt": "2025-12-21T18:46:55.512Z",
+        "status": "success",
+        "stderr": "",
+        "stdout": "Hello, World!",
+        "totalTimeMs": 332
+    }
 }
 ```
 
