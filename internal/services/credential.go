@@ -15,14 +15,14 @@ import (
 var ErrCredentialAlreadyExists = errors.New("active credential already exists for this user")
 
 // GenerateAPIKey generates a random API key string
-// Format: neuron_<32_char_hex>
+// Format: nr_live_<32_char_hex>
 func GenerateAPIKey() (string, error) {
 	bytes := make([]byte, 32) // 32 bytes = 64 hex chars
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
 	randomPart := hex.EncodeToString(bytes)
-	return fmt.Sprintf("neuron_%s", randomPart), nil
+	return fmt.Sprintf("nr_live_%s", randomPart), nil
 }
 
 // CreateCredential generates and saves a new credential for the user

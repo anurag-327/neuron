@@ -8,6 +8,7 @@ import (
 	"github.com/anurag-327/neuron/config"
 	"github.com/anurag-327/neuron/conn"
 	"github.com/anurag-327/neuron/internal/factory"
+	"github.com/anurag-327/neuron/internal/handler/status"
 	"github.com/anurag-327/neuron/internal/middleware"
 	"github.com/anurag-327/neuron/internal/models"
 	"github.com/anurag-327/neuron/internal/routes"
@@ -27,6 +28,7 @@ func init() {
 	models.CreateCreditTransactionIndexes()
 	models.CreateJobIndexes()
 	models.CreateApiLogIndexes()
+	models.CreateSystemStatusIndexes()
 }
 
 func main() {
@@ -40,6 +42,7 @@ func main() {
 
 	routes.RegisterV1Group(router)
 
+	router.GET("/status", status.GetStatus)
 	router.GET("/health", func(c *gin.Context) {
 		response.JSON(c, http.StatusOK, "healthy")
 	})

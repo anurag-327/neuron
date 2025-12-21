@@ -12,6 +12,7 @@ import (
 
 type Producer struct {
 	writer *kafka.Writer
+	addr   string
 }
 
 func NewProducer() (messaging.Publisher, error) {
@@ -30,6 +31,7 @@ func NewProducer() (messaging.Publisher, error) {
 			RequiredAcks: kafka.RequireOne,
 			Async:        true,
 		},
+		addr: broker,
 	}
 
 	log.Println("Kafka producer initialized.")
@@ -66,4 +68,13 @@ func (kp *Producer) Close() {
 	} else {
 		log.Println("Kafka producer closed.")
 	}
+}
+
+func (kp *Producer) Health() error {
+	conn, err := kafka.Dial("tcp", kp.addr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	return nil
 }

@@ -96,3 +96,35 @@ func StartConsumer(ctx context.Context, topic string, group string, maxConcurren
 	log.Printf("Worker listening on topic: %s", topic)
 	return nil
 }
+
+func GetPublisherHealth() error {
+	p, err := GetPublisher()
+	if err != nil {
+		return err
+	}
+	return p.Health()
+}
+
+func GetSubscriberHealth() error {
+	backend := os.Getenv("QUEUE_SERVICE")
+
+	var (
+		s   messaging.Subscriber
+		err error
+	)
+
+	switch backend {
+	case "kafka":
+		s, err = kafkaConsumer.NewConsumer("health_check_group", "health_check_topic")
+	case "redis", "":
+		s, err = redisConsumer.NewConsumer("health_check_group", "health_check_topic")
+	default:
+		return fmt.Errorf("unsupported QUEUE_BACKEND: %s", backend)
+	}
+
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	return s.Health()
+}

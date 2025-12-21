@@ -3,8 +3,8 @@ package config
 import "github.com/anurag-327/neuron/internal/models"
 
 var CreditPricing = map[models.CreditTransactionReason]int64{
-	models.CreditReasonSubmission: 5,
-	models.CreditReasonRerun:      2,
+	models.CreditReasonSubmission: 1,
+	models.CreditReasonRerun:      1,
 }
 
 func GetCreditsForReason(reason models.CreditTransactionReason) int64 {

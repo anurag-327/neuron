@@ -133,3 +133,7 @@ func (rc *RedisConsumer) Close() {
 		}
 	}
 }
+
+func (rc *RedisConsumer) Health() error {
+	return rc.client.Ping(context.Background()).Err()
+}

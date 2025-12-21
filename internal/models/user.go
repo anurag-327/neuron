@@ -20,7 +20,7 @@ const (
 	RoleTypeUser       RoleType     = "user"
 	RoleTypeAdmin      RoleType     = "Admin"
 
-	DefaultSignupCredits int64 = 100
+	DefaultSignupCredits int64 = 1000
 )
 
 type User struct {

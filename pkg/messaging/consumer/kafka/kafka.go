@@ -14,6 +14,7 @@ type KafkaConsumer struct {
 	reader *kafka.Reader
 	topic  string
 	group  string
+	addr   string
 }
 
 func NewConsumer(consumerGroup string, topic string) (messaging.Subscriber, error) {
@@ -37,7 +38,7 @@ func NewConsumer(consumerGroup string, topic string) (messaging.Subscriber, erro
 	})
 
 	log.Printf("✅ Kafka consumer initialized. Group: %s | Topic: %s", consumerGroup, topic)
-	return &KafkaConsumer{reader: reader, topic: topic, group: consumerGroup}, nil
+	return &KafkaConsumer{reader: reader, topic: topic, group: consumerGroup, addr: broker}, nil
 }
 
 // Consume is the normal streaming consumer —
@@ -115,4 +116,13 @@ func (kc *KafkaConsumer) Close() {
 	} else {
 		log.Printf("🧹 Kafka consumer closed for topic=%s", kc.topic)
 	}
+}
+
+func (kc *KafkaConsumer) Health() error {
+	conn, err := kafka.Dial("tcp", kc.addr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	return nil
 }

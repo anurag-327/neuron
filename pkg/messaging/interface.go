@@ -8,9 +8,11 @@ type Subscriber interface {
 	Consume(ctx context.Context, handler func(message []byte) error)
 	ConsumeControlled(ctx context.Context, handler func(message []byte) error, maxConcurrent int)
 	Close()
+	Health() error
 }
 
 type Publisher interface {
 	Publish(topic string, key string, data []byte) error
 	Close()
+	Health() error
 }

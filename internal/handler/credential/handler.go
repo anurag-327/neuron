@@ -46,7 +46,9 @@ func GetCredentialHandler(c *gin.Context) {
 	cred, err := services.GetCredential(ctx, user.ID)
 	if err != nil {
 		if err == repository.ErrCredentialNotFound {
-			response.Error(c, http.StatusNotFound, "no active credential found")
+			response.Success(c, http.StatusOK, "credential fetched successfully", gin.H{
+				"credential": nil,
+			})
 			return
 		}
 		response.Error(c, http.StatusInternalServerError, err.Error())

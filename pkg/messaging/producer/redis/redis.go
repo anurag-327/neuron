@@ -54,5 +54,8 @@ func (rp *RedisProducer) Close() {
 			log.Printf("Failed to close redis client")
 		}
 	}
+}
 
+func (rp *RedisProducer) Health() error {
+	return rp.client.Ping(context.Background()).Err()
 }

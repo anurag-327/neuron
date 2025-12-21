@@ -336,3 +336,8 @@ func (d *Runner) killExecProcess(ctx context.Context, containerID string, pID in
 		container.ExecStartOptions{},
 	)
 }
+
+func (d *Runner) Health() error {
+	_, err := d.client.Ping(context.Background())
+	return err
+}

@@ -92,7 +92,12 @@ func ExecuteCode(jobBytes []byte) error {
 	// -----------------------------
 	// 2) Initialize Docker runner
 	// -----------------------------
-	dC, _ := conn.GetDockerClient()
+	dC, dockerErr := conn.GetDockerClient()
+	if dockerErr != nil {
+		log.Println("[RUN] failed to get docker client:", dockerErr)
+		failJob(ctx, &job, models.ErrSandboxError, "failed to initiate sandboxed container")
+		return fmt.Errorf("failed to get docker client: %w", dockerErr)
+	}
 	r := docker.NewRunner(dC)
 
 	// -----------------------------

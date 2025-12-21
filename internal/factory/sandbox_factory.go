@@ -6,6 +6,7 @@ import (
 
 	"github.com/anurag-327/neuron/conn"
 	"github.com/anurag-327/neuron/pkg/sandbox"
+	"github.com/anurag-327/neuron/pkg/sandbox/docker"
 )
 
 var (
@@ -15,11 +16,19 @@ var (
 
 func GetRunner() sandbox.Runner {
 	onceRunnerInstance.Do(func() {
-		_, err := conn.GetDockerClient()
+		client, err := conn.GetDockerClient()
 		if err != nil {
 			log.Fatalf("Failed to init docker client: %v", err)
 		}
-
+		runnerInstance = docker.NewRunner(client)
 	})
 	return runnerInstance
+}
+
+func GetRunnerHealth() error {
+	r := GetRunner()
+	if r == nil {
+		return nil // or error if it should be initialized
+	}
+	return r.Health()
 }

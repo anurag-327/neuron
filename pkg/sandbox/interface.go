@@ -3,9 +3,10 @@ package sandbox
 import (
 	"context"
 
-	"github.com/anurag-327/neuron/internal/models"
+	"github.com/anurag-327/neuron/pkg/sandbox/docker"
 )
 
 type Runner interface {
-	Run(ctx context.Context, basePath, code, input, language string) (string, string, models.SandboxError, string)
+	Run(ctx context.Context, containerID, basePath, code, input, language string) docker.RunResult
+	Health() error
 }
