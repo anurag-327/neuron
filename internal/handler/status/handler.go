@@ -44,10 +44,13 @@ func GetStatus(c *gin.Context) {
 	runnerHealth := factory.GetRunnerHealth()
 
 	newStatus := &models.SystemStatus{
-		UpdatedAt:  time.Now(),
-		Publisher:  models.StatusUp,
-		Subscriber: models.StatusUp,
-		Runner:     models.StatusUp,
+		UpdatedAt:       time.Now(),
+		Publisher:       models.StatusUp,
+		Subscriber:      models.StatusUp,
+		Runner:          models.StatusUp,
+		PublisherError:  "",
+		SubscriberError: "",
+		RunnerError:     "",
 	}
 
 	if pubHealth != nil {
