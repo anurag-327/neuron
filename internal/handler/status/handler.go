@@ -23,16 +23,6 @@ func GetStatus(c *gin.Context) {
 				"updated_at": storedStatus.UpdatedAt,
 			}
 
-			if storedStatus.Publisher == models.StatusDown {
-				response["publisher_error"] = storedStatus.PublisherError
-			}
-			if storedStatus.Subscriber == models.StatusDown {
-				response["subscriber_error"] = storedStatus.SubscriberError
-			}
-			if storedStatus.Runner == models.StatusDown {
-				response["runner_error"] = storedStatus.RunnerError
-			}
-
 			c.JSON(http.StatusOK, response)
 			return
 		}
@@ -75,16 +65,6 @@ func GetStatus(c *gin.Context) {
 		"subscriber": newStatus.Subscriber,
 		"runner":     newStatus.Runner,
 		"updated_at": newStatus.UpdatedAt,
-	}
-
-	if newStatus.Publisher == models.StatusDown {
-		response["publisher_error"] = newStatus.PublisherError
-	}
-	if newStatus.Subscriber == models.StatusDown {
-		response["subscriber_error"] = newStatus.SubscriberError
-	}
-	if newStatus.Runner == models.StatusDown {
-		response["runner_error"] = newStatus.RunnerError
 	}
 
 	c.JSON(http.StatusOK, response)
