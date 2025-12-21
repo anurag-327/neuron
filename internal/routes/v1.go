@@ -11,4 +11,5 @@ func RegisterV1Group(router *gin.Engine) {
 	RegisterUserRoutes(v1)
 	RegisterLogsRoutes(v1)
 	RegisterCredentialRoutes(v1)
+	RegisterStatsRoutes(v1)
 }
