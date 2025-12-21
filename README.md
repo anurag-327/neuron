@@ -1,302 +1,357 @@
-<h1 align="center" style="font-weight:700; font-size:42px;">
-✨ NEURON ✨
+<h1 align="center">
+  <br>
+  <img src="https://svg-banners.vercel.app/api?type=glitch&text1=Neuron&width=800&height=200" alt="Neuron">
+  <br>
+  Neuron
+  <br>
 </h1>
 
-<div align="center">
+<h4 align="center">A blazing-fast, secure code execution engine for modern applications</h4>
 
-![Languages](https://img.shields.io/badge/languages-C++%20%7C%20Python%20%7C%20JavaScript%20%7C%20Java-blue)
-![Sandbox](https://img.shields.io/badge/sandbox-Docker-red)
-![Status](https://img.shields.io/badge/status-production%20ready-green)
+<p align="center">
+  <a href="#key-features">Key Features</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#api-reference">API Reference</a> •
+  <a href="#pricing">Pricing</a> •
+  <a href="#documentation">Documentation</a>
+</p>
 
-<img src="https://svg-banners.vercel.app/api?type=glitch&text1=Neuron&width=900&height=250" />
-
-**A secure, scalable code execution platform for EdTech creators, educators, and organizations**
-
-[Features](#-features) • [Use Cases](#-use-cases) • [API Reference](#-api-reference) • [Getting Started](#-getting-started)
-
-</div>
+<p align="center">
+  <img src="https://img.shields.io/badge/languages-4+-blue?style=for-the-badge" alt="Languages">
+  <img src="https://img.shields.io/badge/latency-200--300ms-green?style=for-the-badge" alt="Latency">
+  <img src="https://img.shields.io/badge/sandbox-Docker-2496ED?style=for-the-badge&logo=docker" alt="Docker">
+  <img src="https://img.shields.io/badge/status-production%20ready-success?style=for-the-badge" alt="Status">
+</p>
 
 ---
 
 ## 🎯 What is Neuron?
 
-Neuron is a production-ready code execution engine that lets you add interactive coding capabilities to your platform without building infrastructure from scratch. Perfect for:
+Neuron is a **production-grade code execution platform** that enables you to run untrusted code securely at scale. Built for EdTech platforms, coding bootcamps, developer tools, and technical assessment systems.
 
-- **EdTech Platforms** - Launch coding bootcamps and courses
-- **Tech Educators** - Add hands-on exercises to your content
-- **Organizations** - Build internal training and assessment tools
-- **Developer Tools** - Create REPLs, playgrounds, and testing environments
-
-**Skip months of development and infrastructure costs.** Integrate Neuron through a simple REST API and start accepting code submissions immediately.
-
----
-
-## ✨ Features
-
-### 🔒 **Secure Execution**
-- Docker-isolated sandbox environment
-- Resource limits (CPU, memory, execution time)
-- Network access restrictions
-- Automatic cleanup after execution
-
-### ⚡ **High Performance**
-- Redis-powered queue with microsecond latency
-- Real-time execution status updates
-- Handles 1M+ daily executions
-- 99.9% uptime SLA
-
-### 🌐 **Multi-Language Support**
-Execute code in multiple programming languages:
-- Python
-- JavaScript (Node.js)
-- Java
-- C++
-
-> ⚠️ **Note:** Go execution support is temporarily unavailable due to Docker sandbox limitations.
-
-### 📈 **Scalable Architecture**
-- Distributed worker pool
-- Kafka support for horizontal scaling
-- Auto-scaling based on demand
-- Pay-per-use pricing model
+**Why Neuron?**
+- ⚡ **200-300ms average execution time** - Pre-warmed container pools eliminate cold starts
+- 🔒 **Enterprise-grade security** - Docker isolation, network restrictions, resource limits
+- 🌐 **Multi-language** - Python, JavaScript, Java, C++ (more coming soon)
+- 🚀 **Simple integration** - REST API for easy integration
 
 ---
 
-## 💡 Use Cases
+## ✨ Key Features
 
-### **Online Learning Platforms**
-Add interactive coding exercises to your courses. Students can write and execute code directly in your platform with instant feedback.
+### 🔐 Security First
 
-### **Coding Bootcamps**
-Build comprehensive curriculum with hands-on practice. Track student progress and provide automated code evaluation.
+```
+┌─────────────────────────────────────┐
+│  Untrusted Code                     │
+│  ↓                                  │
+│  ✓ Static analysis & validation    │
+│  ✓ Sandboxed Docker containers     │
+│  ✓ Network isolation (no internet) │
+│  ✓ Read-only filesystem            │
+│  ✓ CPU & memory limits             │
+│  ✓ Execution timeout (3s)          │
+└─────────────────────────────────────┘
+```
 
-### **Technical Assessments**
-Create coding challenges for hiring and skill evaluation. Securely run candidate submissions without infrastructure overhead.
+**Security Layers:**
+- **Code Validation** - Blocks dangerous APIs (file I/O, network, process execution)
+- **Container Isolation** - Each execution runs in an isolated Docker environment
+- **Resource Limits** - Prevents resource exhaustion attacks
+- **Automatic Cleanup** - Containers are destroyed or reset after execution
 
-### **Developer Documentation**
-Embed live code examples in your docs. Let users experiment with your API or SDK in real-time.
+### ⚡ Performance Optimized
+
+```
+Traditional Approach:          Neuron Approach:
+┌──────────────────┐          ┌──────────────────┐
+│ Create Container │ 2000ms   │ Get from Pool    │ 5ms
+│ Install Runtime  │ 1500ms   │ Execute Code     │ 250ms
+│ Execute Code     │  250ms   │ Return to Pool   │ 2ms
+│ Cleanup          │  500ms   │                  │
+└──────────────────┘          └──────────────────┘
+Total: ~4250ms                Total: ~257ms
+```
+
+**Performance Features:**
+- **Container Pooling** - Pre-warmed containers ready to execute
+- **Intelligent Scaling** - Auto-scale from 1 to N containers per language
+- **Queue Management** - Redis/Kafka-powered job distribution
+- **Outlier Filtering** - Accurate performance metrics with IQR-based filtering
+
+### 📊 Built-in Analytics
+
+Track execution metrics, performance trends, and user activity:
+
+- **Real-time Stats** - Execution counts, success rates, response times
+- **Language Analytics** - Most-used languages, execution patterns
+- **Performance Insights** - Average queue time, execution time (outliers filtered)
+- **User Dashboards** - Credit usage, execution history, API logs
+
+### 🌐 Multi-Language Support
+
+| Language | Version | Avg. Execution | Status |
+|----------|---------|----------------|--------|
+| **Python** | 3.12 | 150ms | ✅ Production |
+| **JavaScript** | Node 22 | 200ms | ✅ Production |
+| **Java** | JDK 21 | 500ms | ✅ Production |
+| **C++** | GCC Latest | 280ms | ✅ Production |
+| **Go** | - | - | 🚧 Coming Soon |
+| **Rust** | - | - | 🔜 Planned |
 
 ---
 
-## 📡 API Reference
+## 🚀 Quick Start
 
-### Base URL
-```
-https://api.neuron.dev
-```
+### 1. Get Your API Key
 
-### Authentication
-Include your API key in the request header:
-```
-Authorization: Bearer YOUR_API_KEY
-```
 
----
-
-### Submit Code for Execution
-
-Execute user-submitted code in a secure sandbox.
-
-**Endpoint:** `POST /api/v1/runner/submit`
-
-**Request Body:**
-```json
-{
-  "code": "print('Hello World')",
-  "language": "python",
-  "input": ""
-}
-```
-
-**Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `code` | string | Yes | Source code to execute |
-| `language` | string | Yes | Language: `python`, `javascript`, `java`, `cpp` |
-| `input` | string | No | Standard input for the program |
-
-**Response:**
-```json
-{
-  "jobId": "x7k9m2p4",
-  "status": "queued",
-  "submittedAt": "2025-12-12T10:30:00Z"
-}
-```
-
-**Status Codes:**
-- `200` - Code submitted successfully
-- `400` - Invalid request (missing parameters, unsupported language)
-- `401` - Unauthorized (invalid API key)
-- `429` - Rate limit exceeded
-
----
-
-### Check Execution Status
-
-Track the progress of your code execution.
-
-**Endpoint:** `GET /api/v1/runner/:jobId/status`
-
-**Example:**
-```bash
-curl -H "Authorization: Bearer YOUR_API_KEY" \
-  https://api.neuron.dev/api/v1/runner/x7k9m2p4/status
-```
-
-**Response:**
-```json
-{
-  "jobId": "x7k9m2p4",
-  "status": "success",
-  "output": "Hello World\n",
-  "executionTime": 245,
-  "completedAt": "2025-12-12T10:30:02Z"
-}
-```
-
-**Status Values:**
-| Status | Description |
-|--------|-------------|
-| `queued` | Waiting in execution queue |
-| `running` | Currently executing |
-| `success` | Completed successfully |
-| `failed` | Execution error (syntax, runtime, timeout) |
-| `cancelled` | Execution was cancelled |
-
-**Response Fields:**
-- `output` - Standard output from the program
-- `error` - Error message (if status is `failed`)
-- `executionTime` - Time taken in milliseconds
-- `completedAt` - ISO 8601 timestamp
-
----
-
-### Get Execution Result
-
-Retrieve complete execution details including output and errors.
-
-**Endpoint:** `GET /api/v1/runner/:jobId/result`
-
-**Response:**
-```json
-{
-  "jobId": "x7k9m2p4",
-  "status": "success",
-  "code": "print('Hello World')",
-  "language": "python",
-  "input": "",
-  "output": "Hello World\n",
-  "error": null,
-  "executionTime": 245,
-  "memoryUsed": 8192,
-  "submittedAt": "2025-12-12T10:30:00Z",
-  "completedAt": "2025-12-12T10:30:02Z"
-}
-```
-
----
-
-## 🚀 Getting Started
-
-### 1. Sign Up
-Visit [neuron.dev](https://neuron.dev) and create an account.
-
-### 2. Get API Key
-Generate your API key from the dashboard.
-
-### 3. Make Your First Request
+### 2. Submit Your First Code
 
 ```bash
 curl -X POST https://api.neuron.dev/api/v1/runner/submit \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
-    "code": "print(\"Hello from Neuron\")",
-    "language": "python"
+    "language": "python",
+    "code": "print(\"Hello from Neuron!\")",
+    "input": ""
   }'
 ```
 
-### 4. Check Result
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "job_x7k9m2p4",
+    "status": "queued"
+  }
+}
+```
+
+### 3. Get Results
 
 ```bash
-curl -H "Authorization: Bearer YOUR_API_KEY" \
-  https://api.neuron.dev/api/v1/runner/JOB_ID/result
+curl https://api.neuron.dev/api/v1/runner/job_x7k9m2p4/result \
+  -H "X-API-KEY: nr_live_1234567890abcdef..."
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "job_x7k9m2p4",
+    "status": "success",
+    "output": "Hello from Neuron!\n",
+    "executionTime": 245,
+    "queueTime": 12,
+    "language": "python"
+  }
+}
 ```
 
 ---
 
-## 📊 Pricing
+## 📡 API Reference
 
-### Free Tier
-- 1,000 executions/month
+### Authentication
+
+All API requests require authentication via Bearer token or API key:
+
+```bash
+# Option 1: JWT Token
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+
+# Option 2: API Key
+X-API-Key: nr_live_1234567890abcdef...
+```
+
+### Core Endpoints
+
+#### `POST /api/v1/runner/submit`
+Submit code for execution
+
+**Request:**
+```json
+{
+  "language": "python",      // python | javascript | java | cpp
+  "code": "print('Hello')",  // Source code (max 256KB)
+  "input": ""                // Optional stdin input
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "job_abc123",
+    "status": "queued"
+  }
+}
+```
+
+#### `GET /api/v1/runner/:jobId/result`
+Get execution results
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "job_abc123",
+    "status": "success",           // queued | running | success | failed
+    "output": "Hello\n",           // stdout
+    "error": null,                 // stderr (if failed)
+    "executionTime": 245,          // milliseconds
+    "queueTime": 12,               // milliseconds
+    "language": "python",
+    "createdAt": "2025-12-21T18:00:00Z"
+  }
+}
+```
+
+#### `GET /status`
+Check system health
+
+**Response:**
+```json
+{
+  "publisher": "up",
+  "subscriber": "up",
+  "runner": "up",
+  "updatedAt": "2025-12-21T18:00:00Z"
+}
+```
+
+---
+
+## � Pricing
+
+### 🎁 Trial Phase
+Get started for free
+
+- **1,000 credits** to explore the platform
 - All languages supported
+- Full API access
 - Community support
 
-### Pro Tier
-- 50,000 executions/month
-- Priority execution queue
-- Email support
-- Custom resource limits
 
-### Enterprise
-- Unlimited executions
-- Dedicated infrastructure
-- SLA guarantees
-- 24/7 support
-- Custom integrations
-
-[View detailed pricing →](https://neuron.dev/pricing)
 
 ---
 
-## 🛠️ SDKs & Libraries
+## 📚 Documentation
 
-Official SDKs for easy integration:
+- 📖 [**API Documentation**](./README.md) - Complete API reference
+- 🤝 [**Contributing**](./CONTRIBUTING.md) - How to contribute
+- 🌐 [**Language Support**](./LANGUAGE_SUPPORT.md) - Add new languages
+---
 
-- **Python** - `pip install neuron-sdk`
-- **JavaScript/Node.js** - `npm install @neuron/sdk`
-- **Java** - `maven: dev.neuron:sdk`
-- **Go** - `go get github.com/neuron/go-sdk`
+## 🏗️ Architecture
+
+```
+┌─────────────┐
+│   Client    │
+└──────┬──────┘
+       │ HTTPS
+       ▼
+┌─────────────────────────────┐
+│      API Server (Go)        │
+│  • Authentication           │
+│  • Code Validation          │
+│  • Job Queueing            │
+└──────────┬──────────────────┘
+           │
+           ▼
+    ┌──────────────┐
+    │ Redis/Kafka  │ (Message Queue)
+    └──────┬───────┘
+           │
+           ▼
+┌──────────────────────────────┐
+│     Worker (Go)              │
+│  • Container Pool Manager    │
+│  • Code Execution Engine     │
+│  • Result Processing         │
+└──────────┬───────────────────┘
+           │
+           ▼
+    ┌──────────────┐
+    │   MongoDB    │ (Results & Logs)
+    └──────────────┘
+```
+
+**Key Components:**
+- **API Server** - Handles requests, validates code, manages queue
+- **Worker** - Executes code in Docker containers
+- **Container Pools** - Pre-warmed containers for each language
+- **Message Queue** - Distributes jobs (Redis Streams or Kafka)
+- **MongoDB** - Stores jobs, users, analytics
 
 ---
 
-## 📚 Resources
+## 🔒 Security
 
-- [API Documentation](https://docs.neuron.dev)
-- [Integration Guides](https://docs.neuron.dev/guides)
-- [Code Examples](https://github.com/neuron/examples)
-- [Status Page](https://status.neuron.dev)
+Neuron implements defense-in-depth security:
+
+### Code Validation
+- Static analysis for dangerous patterns
+- Size limits (256KB per submission)
+- Blocked APIs: file I/O, network, process execution
+
+### Container Isolation
+- Network disabled (`--network=none`)
+- Read-only root filesystem
+- Temporary writable `/tmp` (64MB limit)
+- No privileged access
+
+### Resource Limits
+- **CPU**: Shared (Docker host limits)
+- **Memory**: 256MB per container
+- **Execution Time**: 3 seconds timeout
+- **Disk**: Read-only + 64MB temp
+
+### Monitoring
+- Real-time health checks
+- Automatic container replacement
+- Execution logging and audit trails
 
 ---
 
-## 🔧 Self-Hosting
+## 🤝 Contributing
 
-Want to run Neuron on your own infrastructure?
+We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
 
-See [SETUP.md](./SETUP.md) for local development and self-hosting instructions.
-
----
-
-## 🤝 Support
-
-- **Documentation:** [docs.neuron.dev](https://docs.neuron.dev)
-- **Email:** support@neuron.dev
-- **Discord:** [Join our community](https://discord.gg/neuron)
-- **Issues:** [GitHub Issues](https://github.com/anurag-327/neuron/issues)
+- Development setup
+- Code architecture
+- Pull request process
+- Adding new languages
 
 ---
 
 ## 📄 License
 
-MIT License - see [LICENSE](./LICENSE) for details
+MIT License - see [LICENSE](./LICENSE) for details.
+
+---
+
+## 🌟 Community & Support
+
+- **Documentation**: [docs.neuron.dev](https://docs.neuron.dev)
+- **GitHub Issues**: [Report bugs](https://github.com/anurag-327/neuron/issues)
+- **Discord**: [Join community](https://discord.gg/neuron)
+- **Email**: support@neuron.dev
 
 ---
 
 <div align="center">
 
-**Built with ❤️ for educators and creators worldwide**
+**Built with ❤️ for developers, educators, and creators worldwide**
 
-[Website](https://neuron.dev) • [Documentation](https://docs.neuron.dev) • [GitHub](https://github.com/anurag-327/neuron)
+[Website](https://neuron.dev) • [Documentation](https://docs.neuron.dev) • [GitHub](https://github.com/anurag-327/neuron) • [Discord](https://discord.gg/neuron)
+
+⭐ **Star us on GitHub** — it helps!
 
 </div>

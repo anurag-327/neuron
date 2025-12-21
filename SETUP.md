@@ -1,6 +1,6 @@
 # 🛠️ Local Development Setup
 
-This guide is for developers who want to run Neuron locally for development or self-hosting purposes.
+This guide is for developers who want to run Neuron locally for development.
 
 ---
 
@@ -52,10 +52,7 @@ REDIS_PORT=6379
 KAFKA_BROKER=localhost:9092
 KAFKA_TOPIC=neuron-jobs
 
-# Execution Configuration
-MAX_EXECUTION_TIME=30s
-MAX_MEMORY_MB=256
-WORKER_COUNT=4
+
 ```
 
 ---
@@ -199,7 +196,7 @@ curl -X POST http://localhost:8080/api/v1/runner/submit \
 ### Check Job Status
 
 ```bash
-curl http://localhost:8080/api/v1/runner/abc123xyz/status
+curl http://localhost:8080/api/v1/runner/abc123xyz/result
 ```
 
 **Expected Response:**
@@ -238,37 +235,7 @@ neuron/
 
 ---
 
-## 🔧 Configuration Files
-
-### API Server Configuration (`.air.api.toml`)
-
-```toml
-root = "."
-testdata_dir = "testdata"
-tmp_dir = "tmp"
-
-[build]
-  args_bin = []
-  bin = "./tmp/api"
-  cmd = "go build -o ./tmp/api ./cmd/api"
-  delay = 1000
-  exclude_dir = ["assets", "tmp", "vendor", "testdata"]
-  exclude_file = []
-  exclude_regex = ["_test.go"]
-  exclude_unchanged = false
-  follow_symlink = false
-  full_bin = ""
-  include_dir = []
-  include_ext = ["go", "tpl", "tmpl", "html"]
-  kill_delay = "0s"
-  log = "build-errors.log"
-  poll = false
-  poll_interval = 0
-  rerun = false
-  rerun_delay = 500
-  send_interrupt = false
-  stop_on_error = false
-```
+#
 
 ### Worker Configuration (`.air.worker.toml`)
 
@@ -373,98 +340,7 @@ docker exec -it kafka kafka-console-consumer \
   --from-beginning
 ```
 
----
 
-## 🧪 Running Tests
-
-```bash
-# Run all tests
-go test ./...
-
-# Run with coverage
-go test -cover ./...
-
-# Run specific package
-go test ./internal/executor/...
-```
-
----
-
-## 🚀 Building for Production
-
-### Build Binaries
-
-```bash
-# Build API server
-go build -o bin/api ./cmd/api
-
-# Build worker
-go build -o bin/worker ./cmd/worker
-```
-
-### Build Docker Images
-
-```bash
-# Build all images
-docker compose build
-
-# Build specific service
-docker build -t neuron-api -f docker/api/Dockerfile .
-```
-
----
-
-## 📊 Performance Tuning
-
-### Worker Configuration
-
-Adjust in `.env`:
-
-```env
-# Number of concurrent workers
-WORKER_COUNT=8
-
-# Max execution time per job
-MAX_EXECUTION_TIME=30s
-
-# Memory limit per execution
-MAX_MEMORY_MB=512
-```
-
-### Redis Configuration
-
-For high-throughput scenarios, tune Redis:
-
-```bash
-# Max connections
-redis-cli CONFIG SET maxclients 10000
-
-# Memory policy
-redis-cli CONFIG SET maxmemory-policy allkeys-lru
-```
-
----
-
-## 🔐 Security Considerations
-
-### For Local Development
-
-- Default configuration is insecure (no authentication)
-- Do not expose ports publicly
-- Use only on trusted networks
-
-### For Production
-
-- Enable MongoDB authentication
-- Use TLS for all connections
-- Implement API key authentication
-- Restrict Docker socket access
-- Use firewall rules
-- Regular security updates
-
-See [SECURITY.md](./SECURITY.md) for detailed security guidelines.
-
----
 
 ## 🤝 Contributing
 

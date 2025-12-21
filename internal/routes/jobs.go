@@ -10,6 +10,6 @@ func RegisterRunnerRoutes(router *gin.RouterGroup) {
 	runnerRouter := router.Group("/runner")
 	{
 		runnerRouter.POST("/submit", middleware.HybridAuthMiddleware(), runnerHandler.SubmitCodeHandler)
-		runnerRouter.GET("/:jobId/status", middleware.HybridAuthMiddleware(), runnerHandler.GetJobStatusHandler)
+		runnerRouter.GET("/:jobId/result", middleware.HybridAuthMiddleware(), runnerHandler.GetJobStatusHandler)
 	}
 }
