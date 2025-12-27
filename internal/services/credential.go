@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -25,6 +26,12 @@ func GenerateAPIKey() (string, error) {
 	return fmt.Sprintf("nr_live_%s", randomPart), nil
 }
 
+// hashAPIKey creates a SHA-256 hash of the API key for secure storage
+func hashAPIKey(key string) string {
+	hash := sha256.Sum256([]byte(key))
+	return hex.EncodeToString(hash[:])
+}
+
 // CreateCredential generates and saves a new credential for the user
 func CreateCredential(ctx context.Context, userID primitive.ObjectID) (*models.Credential, error) {
 	// Check if exists
@@ -33,19 +40,27 @@ func CreateCredential(ctx context.Context, userID primitive.ObjectID) (*models.C
 		return nil, ErrCredentialAlreadyExists
 	}
 
-	key, err := GenerateAPIKey()
+	plainKey, err := GenerateAPIKey()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate key: %w", err)
 	}
 
+	hashedKey := hashAPIKey(plainKey)
+
 	cred := &models.Credential{
 		UserID:   userID,
-		Key:      key,
+		Key:      hashedKey,
 		Env:      "live",
 		IsActive: true,
 	}
 
-	return repository.CreateCredential(ctx, cred)
+	savedCred, err := repository.CreateCredential(ctx, cred)
+	if err != nil {
+		return nil, err
+	}
+
+	savedCred.Key = plainKey
+	return savedCred, nil
 }
 
 // GetCredential retrieves the user's credential
@@ -58,7 +73,7 @@ func RevokeCredential(ctx context.Context, userID primitive.ObjectID) error {
 	cred, err := repository.GetCredentialByUserID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrCredentialNotFound) {
-			return nil // Already gone
+			return nil
 		}
 		return err
 	}
@@ -67,8 +82,11 @@ func RevokeCredential(ctx context.Context, userID primitive.ObjectID) error {
 }
 
 // ValidateAPIKey checks if the key exists and is active, returns the associated UserID
-func ValidateAPIKey(ctx context.Context, key string) (*models.Credential, error) {
-	cred, err := repository.GetCredentialByKey(ctx, key)
+func ValidateAPIKey(ctx context.Context, plainKey string) (*models.Credential, error) {
+	// Hash the provided key to compare with stored hash
+	hashedKey := hashAPIKey(plainKey)
+
+	cred, err := repository.GetCredentialByKey(ctx, hashedKey)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +95,6 @@ func ValidateAPIKey(ctx context.Context, key string) (*models.Credential, error)
 		return nil, errors.New("credential is inactive")
 	}
 
-	// Async update last used
 	go func(id primitive.ObjectID) {
 		_ = repository.UpdateCredentialLastUsedAt(context.Background(), id)
 	}(cred.ID)

@@ -208,6 +208,24 @@ func (p *ContainerPool) newContainer(ctx context.Context) (string, error) {
 			Tmpfs:          map[string]string{"/tmp": "rw,noexec,nosuid,size=64m"},
 			ReadonlyRootfs: true,
 			NetworkMode:    "none",
+
+			// Resource limits to prevent abuse
+			Resources: container.Resources{
+				Memory:   256 * 1024 * 1024, // 256MB memory limit
+				NanoCPUs: 1000000000,        // 1 CPU core limit
+				PidsLimit: func() *int64 { // Prevent fork bombs
+					limit := int64(100)
+					return &limit
+				}(),
+			},
+
+			// Security options
+			SecurityOpt: []string{
+				"no-new-privileges:true", // Prevent privilege escalation
+			},
+
+			// Prevent container from gaining additional capabilities
+			CapDrop: []string{"ALL"},
 		},
 		nil, nil, "",
 	)

@@ -42,6 +42,7 @@ func VerifyTokenMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("user", user)
+		c.Set("user_id", user.ID)
 		c.Next()
 	}
 }
@@ -71,6 +72,7 @@ func OptionalVerifyTokenMiddleware() gin.HandlerFunc {
 		user, err := repository.GetUserByID(ctx, claims.Sub)
 		if err == nil {
 			c.Set("user", user)
+			c.Set("user_id", user.ID)
 		}
 
 		c.Next()
@@ -115,6 +117,7 @@ func VerifyAdminMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("user", user)
+		c.Set("user_id", user.ID)
 		c.Next()
 	}
 }

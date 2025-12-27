@@ -3,6 +3,7 @@ package authHandler
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -249,12 +250,24 @@ func InitPostmanController(c *gin.Context) {
 
 	xAdminKey := c.GetHeader("x-admin-key")
 	if xAdminKey == "" {
+		// Log failed attempt
+		log.Printf("Admin auth attempt failed: missing x-admin-key header from IP: %s", c.ClientIP())
 		response.Error(c, http.StatusBadRequest, "Missing Authorization Header")
 		c.Abort()
 		return
 	}
 
-	if xAdminKey != os.Getenv("X_ADMIN_KEY") {
+	// Use constant-time comparison to prevent timing attacks
+	expectedKey := os.Getenv("X_ADMIN_KEY")
+	if expectedKey == "" {
+		log.Printf("CRITICAL: X_ADMIN_KEY not configured")
+		response.Error(c, http.StatusInternalServerError, "Server configuration error")
+		return
+	}
+
+	if !util.SecureCompare(xAdminKey, expectedKey) {
+		// Log failed attempt with details
+		log.Printf("Admin auth attempt failed: invalid key from IP: %s, Email: %s", c.ClientIP(), input.Email)
 		response.Error(c, http.StatusUnauthorized, "Invalid admin key")
 		return
 	}
@@ -262,22 +275,29 @@ func InitPostmanController(c *gin.Context) {
 	user, err := repository.GetUserByEmail(ctx, input.Email)
 	if err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
+			log.Printf("Admin auth attempt failed: user not found - Email: %s, IP: %s", input.Email, c.ClientIP())
 			response.Error(c, http.StatusNotFound, "User not found")
 			return
 		}
+		log.Printf("Admin auth attempt failed: database error - Email: %s, IP: %s, Error: %v", input.Email, c.ClientIP(), err)
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+
 	if user.Role != "admin" {
+		log.Printf("Admin auth attempt failed: user is not admin - Email: %s, IP: %s", input.Email, c.ClientIP())
 		response.Error(c, http.StatusForbidden, "You are not authorized to access this resource")
 		return
 	}
 
 	token, err := util.GenerateJWTToken(user, config.TokenExpirationTime, config.JwtSecret)
 	if err != nil {
+		log.Printf("Admin auth token generation failed - Email: %s, Error: %v", input.Email, err)
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	log.Printf("Admin login successful - Email: %s, IP: %s, UserID: %s", input.Email, c.ClientIP(), user.ID.Hex())
 
 	c.Header("Authorization", token)
 	response.Success(c, http.StatusOK, "Login successful", nil)
