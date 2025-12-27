@@ -76,3 +76,30 @@ func RevokeCredentialHandler(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "credential revoked successfully", nil)
 }
+
+// RevealCredentialHandler regenerates the API key and returns the plain text version
+// Note: This will invalidate the old key and create a new one
+func RevealCredentialHandler(c *gin.Context) {
+	ctx := c.Request.Context()
+	user, err := util.GetUserFromContext(c)
+	if err != nil {
+		response.Error(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	// Regenerate credential (revoke old, create new)
+	cred, err := services.RegenerateCredential(ctx, user.ID)
+	if err != nil {
+		if err == repository.ErrCredentialNotFound {
+			response.Error(c, http.StatusNotFound, "no credential found to reveal")
+			return
+		}
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "credential revealed successfully", gin.H{
+		"credential": cred,
+		"warning":    "This is the only time you'll see the plain key. Store it securely.",
+	})
+}

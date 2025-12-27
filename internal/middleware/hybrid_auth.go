@@ -29,6 +29,7 @@ func HybridAuthMiddleware() gin.HandlerFunc {
 					user, err := repository.GetUserByID(ctx, claims.Sub)
 					if err == nil {
 						c.Set("user", user)
+						c.Set("user_id", user.ID)
 						isAuthenticated = true
 					}
 				}

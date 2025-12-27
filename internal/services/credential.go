@@ -101,3 +101,43 @@ func ValidateAPIKey(ctx context.Context, plainKey string) (*models.Credential, e
 
 	return cred, nil
 }
+
+// RegenerateCredential revokes the old credential and creates a new one
+// Returns the new credential with the plain key
+func RegenerateCredential(ctx context.Context, userID primitive.ObjectID) (*models.Credential, error) {
+	// Check if credential exists
+	existing, err := repository.GetCredentialByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Delete the old credential
+	if err := repository.DeleteCredential(ctx, existing); err != nil {
+		return nil, fmt.Errorf("failed to delete old credential: %w", err)
+	}
+
+	// Generate new plain key
+	plainKey, err := GenerateAPIKey()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate key: %w", err)
+	}
+
+	hashedKey := hashAPIKey(plainKey)
+
+	// Create new credential
+	cred := &models.Credential{
+		UserID:   userID,
+		Key:      hashedKey,
+		Env:      "live",
+		IsActive: true,
+	}
+
+	savedCred, err := repository.CreateCredential(ctx, cred)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return with plain key
+	savedCred.Key = plainKey
+	return savedCred, nil
+}
