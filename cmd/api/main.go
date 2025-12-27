@@ -27,6 +27,11 @@ func init() {
 		log.Fatal("Error loading .env file")
 	}
 
+	// Initialize logger first
+	if err := factory.InitializeGlobalLogger(); err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+
 	// Validate JWT_SECRET
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
@@ -73,7 +78,7 @@ func main() {
 		ReadTimeout:    15 * time.Second,
 		WriteTimeout:   15 * time.Second,
 		IdleTimeout:    60 * time.Second,
-		MaxHeaderBytes: 1 << 20, // 1 MB
+		MaxHeaderBytes: 1 << 20,
 	}
 
 	// Start server in a goroutine

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/anurag-327/neuron/pkg/logger"
 	"github.com/docker/docker/api/types/container"
 )
 
@@ -77,6 +78,7 @@ func (p *ContainerPool) checkAll() {
 //   - This only validates container *liveness*, not correctness of execution.
 //   - Exit codes and command output are not currently inspected.
 func (p *ContainerPool) isHealthy(id string) bool {
+	appLogger := logger.GetGlobalLogger()
 	exec, err := p.client.ContainerExecCreate(
 		context.Background(),
 		id,
@@ -87,6 +89,11 @@ func (p *ContainerPool) isHealthy(id string) bool {
 		},
 	)
 	if err != nil {
+		appLogger.Error(context.Background(), time.Now(), "Failed to create exec", map[string]interface{}{
+			"container_id": id,
+			"error":        err.Error(),
+			"initiator":    "isHealthy()",
+		})
 		return false
 	}
 

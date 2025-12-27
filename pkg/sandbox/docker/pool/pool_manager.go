@@ -7,7 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
+	"github.com/anurag-327/neuron/pkg/logger"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 )
@@ -56,6 +58,11 @@ func (pm *PoolManager) InitAll(ctx context.Context) error {
 		log.Printf("Pre-warming container pool for %s...", lang)
 
 		if err := p.WarmUp(ctx); err != nil {
+			appLogger := logger.GetGlobalLogger()
+			appLogger.Error(ctx, time.Now(), "Failed to warm up pool", map[string]interface{}{
+				"language": lang,
+				"error":    err.Error(),
+			})
 			return err
 		}
 	}
@@ -94,7 +101,11 @@ func (p *ContainerPool) WarmUp(ctx context.Context) error {
 	}
 
 	if success == 0 {
-		// Nothing usable → pool cannot function
+		appLogger := logger.GetGlobalLogger()
+		appLogger.Error(ctx, time.Now(), "Failed to warm any containers", map[string]interface{}{
+			"language":  p.lang,
+			"init_size": p.cfg.InitSize,
+		})
 		return fmt.Errorf("failed to warm any containers for %s", p.lang)
 	}
 
@@ -134,6 +145,11 @@ func (p *ContainerPool) Get(ctx context.Context) (string, error) {
 			p.mu.Unlock()
 			return id, nil
 		}
+		appLogger := logger.GetGlobalLogger()
+		appLogger.Error(ctx, time.Now(), "Failed to scale up pool", map[string]interface{}{
+			"language": p.lang,
+			"error":    err.Error(),
+		})
 	}
 	p.mu.Unlock()
 
@@ -230,10 +246,22 @@ func (p *ContainerPool) newContainer(ctx context.Context) (string, error) {
 		nil, nil, "",
 	)
 	if err != nil {
+		appLogger := logger.GetGlobalLogger()
+		appLogger.Error(ctx, time.Now(), "Failed to create container", map[string]interface{}{
+			"language": p.lang,
+			"image":    p.cfg.Image,
+			"error":    err.Error(),
+		})
 		return "", err
 	}
 
 	if err := p.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+		appLogger := logger.GetGlobalLogger()
+		appLogger.Error(ctx, time.Now(), "Failed to start container", map[string]interface{}{
+			"language":     p.lang,
+			"container_id": resp.ID,
+			"error":        err.Error(),
+		})
 		return "", err
 	}
 

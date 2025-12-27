@@ -13,6 +13,7 @@ import (
 	"github.com/anurag-327/neuron/internal/models"
 	"github.com/anurag-327/neuron/internal/registry"
 	fileUtils "github.com/anurag-327/neuron/internal/util/file"
+	"github.com/anurag-327/neuron/pkg/logger"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
 )
@@ -82,9 +83,7 @@ func (d *Runner) Run(
 
 	log("START | container=%s language=%s", containerID, language)
 
-	// ========================================================
 	// 1 Create job directory on HOST
-	// ========================================================
 	projectRoot, _ := os.Getwd()
 	basePath := filepath.Join(projectRoot, basePathString)
 
@@ -92,6 +91,12 @@ func (d *Runner) Run(
 
 	if err := os.MkdirAll(basePath, 0755); err != nil {
 		log("ERROR creating job dir: %v", err)
+		appLogger := logger.GetGlobalLogger()
+		appLogger.Error(ctx, time.Now(), "Failed to create job directory", map[string]interface{}{
+			"container_id": containerID,
+			"language":     language,
+			"error":        err.Error(),
+		})
 		result.ErrType = models.ErrInternalError
 		result.ErrMsg = "Failed to create job directory"
 		return result
@@ -102,9 +107,7 @@ func (d *Runner) Run(
 		fileUtils.DeleteFolder(basePath)
 	}()
 
-	// ========================================================
 	// 2 Load language configuration
-	// ========================================================
 	log("Loading language config: %s", language)
 
 	langCfg, ok := registry.LanguageRegistry[language]
@@ -117,9 +120,7 @@ func (d *Runner) Run(
 
 	names := BuildFileNames(basePath, langCfg)
 
-	// ========================================================
 	// 3 Write user code and input
-	// ========================================================
 	log("Writing code file: %s", names.PathFull)
 
 	if err := fileUtils.WriteContentToFile(names.PathFull, []byte(code), 0644); err != nil {
@@ -145,9 +146,7 @@ func (d *Runner) Run(
 	containerJobPath := filepath.Join("/sandbox", filepath.Base(basePath))
 	log("Container job path: %s", containerJobPath)
 
-	// ========================================================
 	// 4 Build execution command
-	// ========================================================
 	runCmd := langCfg.RunCmd(names)
 
 	runTimeout := 3 * time.Second
@@ -166,9 +165,7 @@ func (d *Runner) Run(
 		),
 	}
 
-	// ========================================================
 	// 5 Create docker exec (NO timeout here)
-	// ========================================================
 	log("Creating docker exec")
 
 	execResp, err := d.client.Client.ContainerExecCreate(
@@ -182,6 +179,12 @@ func (d *Runner) Run(
 	)
 	if err != nil {
 		log("ERROR exec create failed: %v", err)
+		appLogger := logger.GetGlobalLogger()
+		appLogger.Error(ctx, time.Now(), "Docker exec create failed", map[string]interface{}{
+			"container_id": containerID,
+			"language":     language,
+			"error":        err.Error(),
+		})
 		result.ErrType = models.ErrSandboxError
 		result.ErrMsg = "Exec create failed"
 		result.ContainerDirty = true
@@ -190,9 +193,7 @@ func (d *Runner) Run(
 
 	log("Exec created: %s", execResp.ID)
 
-	// ========================================================
 	// 6 Attach to exec & wait with Go timeout
-	// ========================================================
 	execCtx, cancel := context.WithTimeout(ctx, execTimeout)
 	defer cancel()
 
@@ -206,6 +207,12 @@ func (d *Runner) Run(
 	)
 	if err != nil {
 		log("ERROR exec attach failed: %v", err)
+		appLogger := logger.GetGlobalLogger()
+		appLogger.Error(ctx, time.Now(), "Docker exec attach failed", map[string]interface{}{
+			"container_id": containerID,
+			"language":     language,
+			"error":        err.Error(),
+		})
 		result.ErrType = models.ErrSandboxError
 		result.ErrMsg = "Exec attach failed"
 		result.ContainerDirty = true
@@ -222,14 +229,17 @@ func (d *Runner) Run(
 		done <- err
 	}()
 
-	// ========================================================
 	// 7 Wait for completion OR Go-side timeout
-	// ========================================================
 	select {
 
 	case <-execCtx.Done():
 		log("GO TIMEOUT HIT | err=%v", execCtx.Err())
-
+		appLogger := logger.GetGlobalLogger()
+		appLogger.Error(ctx, time.Now(), "Execution timeout (Go context)", map[string]interface{}{
+			"container_id": containerID,
+			"language":     language,
+			"timeout_sec":  execTimeout.Seconds(),
+		})
 		result.ErrType = models.ErrTLE
 		result.ErrMsg = models.MsgTLE
 		result.ContainerDirty = true
@@ -251,9 +261,7 @@ func (d *Runner) Run(
 	log("Captured output | stdout=%dB stderr=%dB",
 		len(result.Stdout), len(result.Stderr))
 
-	// ========================================================
 	// 8 Inspect exit code for classification
-	// ========================================================
 	inspect, _ := d.client.Client.ContainerExecInspect(
 		context.Background(),
 		execResp.ID,
@@ -296,45 +304,6 @@ func (d *Runner) Run(
 
 	log("Execution completed successfully")
 	return result
-}
-
-// ------------------------------------------------------------
-// killExecProcess
-// ------------------------------------------------------------
-//
-// Kills the entire process group of the exec PID.
-// This prevents child processes / fork bombs.
-func (d *Runner) killExecProcess(ctx context.Context, containerID string, pID int) error {
-
-	fmt.Printf("[RUN] killExecProcess | pid=%d\n", pID)
-
-	if pID <= 0 {
-		fmt.Println("[RUN] killExecProcess skipped (pid<=0)")
-		return nil
-	}
-
-	killCmd := []string{
-		"sh", "-c",
-		fmt.Sprintf("kill -9 -%d || true", pID),
-	}
-
-	execResp, err := d.client.Client.ContainerExecCreate(
-		ctx,
-		containerID,
-		container.ExecOptions{Cmd: killCmd},
-	)
-	if err != nil {
-		fmt.Printf("[RUN] killExec create failed: %v\n", err)
-		return err
-	}
-
-	fmt.Printf("[RUN] killExec created: %s\n", execResp.ID)
-
-	return d.client.Client.ContainerExecStart(
-		ctx,
-		execResp.ID,
-		container.ExecStartOptions{},
-	)
 }
 
 func (d *Runner) Health() error {
