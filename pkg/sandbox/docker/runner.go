@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/anurag-327/neuron/conn"
@@ -38,6 +37,7 @@ type RunResult struct {
 	Stderr         string
 	ErrType        models.SandboxError
 	ErrMsg         string
+	ExitCode       int64
 	ContainerDirty bool
 }
 
@@ -80,6 +80,7 @@ func (d *Runner) Run(
 	}
 
 	result := RunResult{}
+	result.ExitCode = 1
 
 	log("START | container=%s language=%s", containerID, language)
 
@@ -255,12 +256,6 @@ func (d *Runner) Run(
 		}
 	}
 
-	result.Stdout = stdoutBuf.String()
-	result.Stderr = stderrBuf.String()
-
-	log("Captured output | stdout=%dB stderr=%dB",
-		len(result.Stdout), len(result.Stderr))
-
 	// 8 Inspect exit code for classification
 	inspect, _ := d.client.Client.ContainerExecInspect(
 		context.Background(),
@@ -270,36 +265,16 @@ func (d *Runner) Run(
 	log("Final inspect | pid=%d exit=%d",
 		inspect.Pid, inspect.ExitCode)
 
-	// MLE detection
-	if inspect.ExitCode == 139 ||
-		strings.Contains(result.Stderr, "Cannot allocate memory") ||
-		strings.Contains(result.Stderr, "Out of memory") {
+	// Parse Error
+	r := ProcessResult(language, int64(inspect.ExitCode), stdoutBuf.String(), stderrBuf.String(), containerJobPath)
+	result.ErrType = r.ErrorType
+	result.ErrMsg = r.ErrorMessage
+	result.Stdout = r.Stdout
+	result.Stderr = r.Stderr
+	result.ExitCode = r.ExitCode
 
-		log("Detected MLE")
-
-		result.ErrType = models.ErrMLE
-		result.ErrMsg = models.MsgMLE
-		result.ContainerDirty = false
-		return result
-	}
-
-	// TLE detection
-	if inspect.ExitCode == 124 || inspect.ExitCode == 137 {
-
-		log("Detected TLE via exit code")
-
-		result.ErrType = models.ErrTLE
-		result.ErrMsg = models.MsgTLE
-		result.ContainerDirty = false
-		return result
-	}
-
-	// Language-level runtime errors
-	if errType, errMsg := DetectError(language, result.Stdout, result.Stderr); errType != "" {
-		log("Detected language error: %s", errType)
-		result.ErrType = errType
-		result.ErrMsg = errMsg
-		return result
+	if r.ExitCode == 139 || r.ExitCode == 124 || r.ExitCode == 137 {
+		result.ContainerDirty = true
 	}
 
 	log("Execution completed successfully")

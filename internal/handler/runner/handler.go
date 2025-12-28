@@ -203,6 +203,7 @@ func GetJobStatusHandler(c *gin.Context) {
 		"sandboxErrorType":    job.SandboxErrorType,
 		"sandboxErrorMessage": job.SandboxErrorMessage,
 		"language":            job.Language,
+		"exitCode":            job.ExitCode,
 
 		// timestamps
 		"queuedAt":   job.QueuedAt,

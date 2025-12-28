@@ -12,6 +12,7 @@ import (
 	"github.com/anurag-327/neuron/pkg/logger"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/go-units"
 )
 
 // PoolManager manages multiple container pools keyed by language/runtime.
@@ -233,6 +234,9 @@ func (p *ContainerPool) newContainer(ctx context.Context) (string, error) {
 					limit := int64(100)
 					return &limit
 				}(),
+				Ulimits: []*units.Ulimit{
+					{Name: "nofile", Soft: 64, Hard: 64}, // Limit open file descriptors
+				},
 			},
 
 			// Security options

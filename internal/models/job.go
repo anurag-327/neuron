@@ -57,7 +57,7 @@ type Job struct {
 	Stderr              string        `bson:"stderr,omitempty" json:"stderr,omitempty"`
 	SandboxErrorType    *SandboxError `bson:"errorType,omitempty" json:"error_type,omitempty"`
 	SandboxErrorMessage string        `bson:"errorMessage,omitempty" json:"error_message,omitempty"`
-	ExitCode            *int          `bson:"exitCode,omitempty" json:"exit_code,omitempty"`
+	ExitCode            int64         `bson:"exitCode,omitempty" json:"exit_code,omitempty"`
 	StartedAt           time.Time     `bson:"startedAt,omitempty" json:"started_at,omitempty"`
 	FinishedAt          time.Time     `bson:"finishedAt,omitempty" json:"finished_at,omitempty"`
 	QueuedAt            time.Time     `bson:"queuedAt,omitempty" json:"queued_at,omitempty"`

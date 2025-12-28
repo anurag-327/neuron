@@ -2,9 +2,9 @@ package pool
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
-	"github.com/anurag-327/neuron/pkg/logger"
 	"github.com/docker/docker/api/types/container"
 )
 
@@ -78,27 +78,32 @@ func (p *ContainerPool) checkAll() {
 //   - This only validates container *liveness*, not correctness of execution.
 //   - Exit codes and command output are not currently inspected.
 func (p *ContainerPool) isHealthy(id string) bool {
-	appLogger := logger.GetGlobalLogger()
-	exec, err := p.client.ContainerExecCreate(
-		context.Background(),
-		id,
-		container.ExecOptions{
-			Cmd:          p.cfg.HealthCmd,
-			AttachStdout: true,
-			AttachStderr: true,
-		},
-	)
+	stats, err := p.client.ContainerStatsOneShot(context.Background(), id)
 	if err != nil {
-		appLogger.Error(context.Background(), time.Now(), "Failed to create exec", map[string]interface{}{
-			"container_id": id,
-			"error":        err.Error(),
-			"initiator":    "isHealthy()",
-		})
+		return false
+	}
+	defer stats.Body.Close()
+
+	var v container.StatsResponse
+	if err := json.NewDecoder(stats.Body).Decode(&v); err != nil {
 		return false
 	}
 
-	// Successful exec creation implies container is responsive
-	return exec.ID != ""
+	// 1. PID CHECK: Extremely strict for idle containers
+	// Baseline is usually 1 (the sleep command). Anything > 3 is suspicious.
+	if v.PidsStats.Current > 5 {
+		return false
+	}
+
+	// 2. MEMORY CHECK: Check for 'bloat'
+	// If an idle container is using 50MB+ just sitting there, Python didn't GC properly.
+	if v.MemoryStats.Usage > (50 * 1024 * 1024) {
+		return false
+	}
+
+	// 3. STATE CHECK
+	inspect, err := p.client.ContainerInspect(context.Background(), id)
+	return err == nil && inspect.State.Running
 }
 
 func (p *ContainerPool) setHealth(h PoolHealth) {

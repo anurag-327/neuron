@@ -169,6 +169,7 @@ func ExecuteCode(jobBytes []byte) error {
 		job.SandboxErrorType = &runResult.ErrType
 	}
 	job.SandboxErrorMessage = runResult.ErrMsg
+	job.ExitCode = runResult.ExitCode
 
 	switch runResult.ErrType {
 	case models.ErrSandboxError, models.ErrInternalError:

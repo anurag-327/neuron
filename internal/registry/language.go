@@ -30,7 +30,7 @@ type FileNames struct {
 var LanguageRegistry = map[string]LanguageConfig{
 	"cpp": {
 		Name:        "cpp",
-		Validator:   ValidateAndSanitizeCpp,
+		Validator:   nil,
 		DockerImage: "gcc:latest",
 		BaseName:    "main",
 		Ext:         "cpp",
@@ -60,7 +60,7 @@ var LanguageRegistry = map[string]LanguageConfig{
 
 	"python": {
 		Name:        "python",
-		Validator:   ValidateAndSanitizePython,
+		Validator:   nil,
 		DockerImage: "python:3.12-alpine",
 		BaseName:    "main",
 		Ext:         "py",
@@ -87,7 +87,7 @@ var LanguageRegistry = map[string]LanguageConfig{
 
 	"javascript": {
 		Name:        "javascript",
-		Validator:   ValidateAndSanitizeJS,
+		Validator:   nil,
 		DockerImage: "node:22-alpine",
 		BaseName:    "main",
 		Ext:         "js",
