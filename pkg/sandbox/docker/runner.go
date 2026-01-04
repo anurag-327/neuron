@@ -90,16 +90,24 @@ func (d *Runner) Run(
 
 	log("Creating job directory: %s", basePath)
 
-	if err := os.MkdirAll(basePath, 0755); err != nil {
+	if err := os.MkdirAll(basePath, 0777); err != nil {
 		log("ERROR creating job dir: %v", err)
 		appLogger := logger.GetGlobalLogger()
 		appLogger.Error(ctx, time.Now(), "Failed to create job directory", map[string]interface{}{
-			"container_id": containerID,
-			"language":     language,
-			"error":        err.Error(),
+			"containerID": containerID,
+			"language":    language,
+			"error":       err.Error(),
 		})
 		result.ErrType = models.ErrInternalError
 		result.ErrMsg = "Failed to create job directory"
+		return result
+	}
+
+	// FORCE 0777 to bypass umask (critical for VPS/filesystems where container user != host user)
+	if err := os.Chmod(basePath, 0777); err != nil {
+		log("ERROR chmod job dir: %v", err)
+		result.ErrType = models.ErrInternalError
+		result.ErrMsg = "Failed to set permissions"
 		return result
 	}
 
@@ -124,7 +132,7 @@ func (d *Runner) Run(
 	// 3 Write user code and input
 	log("Writing code file: %s", names.PathFull)
 
-	if err := fileUtils.WriteContentToFile(names.PathFull, []byte(code), 0644); err != nil {
+	if err := fileUtils.WriteContentToFile(names.PathFull, []byte(code), 0777); err != nil {
 		log("ERROR writing code: %v", err)
 		result.ErrType = models.ErrInternalError
 		result.ErrMsg = "Failed to write code"
@@ -136,7 +144,7 @@ func (d *Runner) Run(
 	if err := fileUtils.WriteContentToFile(
 		filepath.Join(basePath, "input.txt"),
 		[]byte(input),
-		0644,
+		0777,
 	); err != nil {
 		log("ERROR writing input: %v", err)
 		result.ErrType = models.ErrInternalError
