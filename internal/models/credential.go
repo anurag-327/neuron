@@ -17,7 +17,7 @@ type Credential struct {
 	mgm.DefaultModel `bson:",inline"`
 
 	UserID     primitive.ObjectID `bson:"userId" json:"userId"`
-	Key        string             `bson:"key" json:"key"`
+	Key        string             `bson:"key" json:"-"`
 	Env        string             `bson:"env" json:"env"`                                   // e.g., "live", "test"
 	IsActive   bool               `bson:"isActive" json:"isActive"`                         // user can disable it
 	LastUsedAt *time.Time         `bson:"lastUsedAt,omitempty" json:"lastUsedAt,omitempty"` // Pointer so it can be nil
