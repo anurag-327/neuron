@@ -30,7 +30,7 @@
 Neuron is a **production-grade code execution platform** that enables you to run untrusted code securely at scale. Built for EdTech platforms, coding bootcamps, developer tools, and technical assessment systems.
 
 **Why Neuron?**
-- ⚡ **200-300ms average execution time** - Pre-warmed container pools eliminate cold starts
+- ⚡ **300-500ms average execution time** - Pre-warmed container pools eliminate cold starts
 - 🔒 **Enterprise-grade security** - Docker isolation, network restrictions, resource limits
 - 🌐 **Multi-language** - Python, JavaScript, Java, C++ (more coming soon)
 - 🚀 **Simple integration** - REST API for easy integration
