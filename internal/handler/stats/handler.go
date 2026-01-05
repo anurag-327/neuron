@@ -18,7 +18,6 @@ func GetStats(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	// Get all stats in parallel
 	totalExecutions, err := repository.GetTotalExecutions(ctx, user.ID)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "failed to get total executions")
@@ -51,22 +50,18 @@ func GetStats(c *gin.Context) {
 
 	insights := repository.GetInsights(ctx, user.ID, languageUsage, weeklyTrend)
 
-	// Calculate credits consumed (negative value)
 	creditsConsumed := int64(0)
 	if totalExecutions > 0 {
-		// Assuming 1 credit per successful execution
 		creditsConsumed = -totalExecutions
 	}
 
-	// Round success rate to 1 decimal place
 	successRateRounded := float64(int(successRate*10)) / 10
 
-	// Build response
 	data := gin.H{
 		"summary": gin.H{
 			"totalExecutions":  totalExecutions,
 			"successRate":      successRateRounded,
-			"avgResponseTime":  int(avgResponseTime), // Convert to int (milliseconds)
+			"avgResponseTime":  int(avgResponseTime),
 			"creditsRemaining": user.Credits,
 			"creditsChange":    creditsConsumed,
 		},
