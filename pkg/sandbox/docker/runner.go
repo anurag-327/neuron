@@ -103,7 +103,7 @@ func (d *Runner) Run(
 		return result
 	}
 
-	// FORCE 0777 to bypass umask (critical for VPS/filesystems where container user != host user)
+	// FORCE 0777 to bypass permissions error
 	if err := os.Chmod(basePath, 0777); err != nil {
 		log("ERROR chmod job dir: %v", err)
 		result.ErrType = models.ErrInternalError

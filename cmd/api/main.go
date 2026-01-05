@@ -14,7 +14,6 @@ import (
 	"github.com/anurag-327/neuron/internal/factory"
 	"github.com/anurag-327/neuron/internal/handler/status"
 	"github.com/anurag-327/neuron/internal/middleware"
-	"github.com/anurag-327/neuron/internal/models"
 	"github.com/anurag-327/neuron/internal/routes"
 	"github.com/anurag-327/neuron/internal/util/response"
 	"github.com/gin-gonic/gin"
@@ -43,11 +42,6 @@ func init() {
 	config.JwtSecret = []byte(jwtSecret)
 
 	conn.ConnectMongoDB()
-	models.CreateUserIndexes()
-	models.CreateCreditTransactionIndexes()
-	models.CreateJobIndexes()
-	models.CreateApiLogIndexes()
-	models.CreateSystemStatusIndexes()
 }
 
 func main() {

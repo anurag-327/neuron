@@ -84,7 +84,9 @@ func (rc *RedisConsumer) ConsumeControlled(ctx context.Context, handler func([]b
 			}
 
 			log.Printf("Redis stream read error [%s]: %v", rc.stream, err)
-			time.Sleep(200 * time.Millisecond)
+
+			// Simple backoff
+			time.Sleep(1 * time.Second)
 			continue
 		}
 

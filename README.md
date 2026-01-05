@@ -109,7 +109,7 @@ Track execution metrics, performance trends, and user activity:
 ### 2. Submit Your First Code
 
 ```bash
-curl -X POST https://api.neuron.dev/api/v1/runner/submit \
+curl -X POST https://api.neuron-labs.xyz/api/v1/runner/submit \
   -H "Content-Type: application/json" \
   -H "X-API-KEY: nr_live_1234567890abcdef..." \
   -d '{
@@ -133,7 +133,7 @@ curl -X POST https://api.neuron.dev/api/v1/runner/submit \
 ### 3. Get Results
 
 ```bash
-curl https://api.neuron.dev/api/v1/runner/job_x7k9m2p4/result \
+curl https://api.neuron-labs.xyz/api/v1/runner/job_x7k9m2p4/result \
   -H "X-API-KEY: nr_live_1234567890abcdef..."
 ```
 
