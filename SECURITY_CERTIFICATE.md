@@ -285,9 +285,8 @@ This platform implements the following industry-standard security practices:
 
 If you discover a security vulnerability, please report it responsibly:
 
-**Security Email:** security@neuron.dev  
-**Response Time:** Within 24 hours  
-**Disclosure Policy:** Coordinated disclosure
+**Security Email:** anuragsrivastav0027@gmail.com
+**Response Time:** Within 24 hours
 
 ---
 
