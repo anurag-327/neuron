@@ -52,7 +52,8 @@ REDIS_PORT=6379
 KAFKA_BROKER=localhost:9092
 KAFKA_TOPIC=neuron-jobs
 
-
+# Core Engine
+NEURON_CORE_URL="http://localhost:9000"
 ```
 
 ---
@@ -165,7 +166,7 @@ The API server will start on `http://localhost:8080`
 air -c .air.worker.toml
 ```
 
-The worker will start processing jobs from the queue.
+The worker will start processing jobs from the queue. It expects the **Core Engine** to be running at `NEURON_CORE_URL` to process code execution.
 
 Both services will automatically restart when you modify source files.
 
@@ -220,12 +221,9 @@ neuron/
 │   └── worker/       # Worker service entry point
 ├── internal/
 │   ├── api/          # HTTP handlers and routes
-│   ├── executor/     # Code execution logic
+│   ├── executor/     # Code execution proxying
 │   ├── queue/        # Message queue abstractions
-│   ├── sandbox/      # Docker sandbox management
 │   └── store/        # Database operations
-├── docker/
-│   └── sandbox/      # Docker images for each language
 ├── .air.api.toml     # Hot reload config for API
 ├── .air.worker.toml  # Hot reload config for Worker
 ├── docker-compose.yml

@@ -258,7 +258,6 @@ Get started for free
 
 - 📖 [**API Documentation**](./README.md) - Complete API reference
 - 🤝 [**Contributing**](./CONTRIBUTING.md) - How to contribute
-- 🌐 [**Language Support**](./LANGUAGE_SUPPORT.md) - Add new languages
 ---
 
 ## 🏗️ Architecture
@@ -284,9 +283,16 @@ Get started for free
            ▼
 ┌──────────────────────────────┐
 │     Worker (Go)              │
+│  • Job Queue Consumer        │
+│  • Routes to Core Engine     │
+│  • Result Processing         │
+└──────────┬───────────────────┘
+           │ HTTP POST
+           ▼
+┌──────────────────────────────┐
+│     Core Engine (Go)         │
 │  • Container Pool Manager    │
 │  • Code Execution Engine     │
-│  • Result Processing         │
 └──────────┬───────────────────┘
            │
            ▼
@@ -297,7 +303,8 @@ Get started for free
 
 **Key Components:**
 - **API Server** - Handles requests, validates code, manages queue
-- **Worker** - Executes code in Docker containers
+- **Worker** - Consumes jobs and routes code execution
+- **Core Engine** - Executes code in Docker containers
 - **Container Pools** - Pre-warmed containers for each language
 - **Message Queue** - Distributes jobs (Redis Streams or Kafka)
 - **MongoDB** - Stores jobs, users, analytics
@@ -339,7 +346,7 @@ We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
 - Development setup
 - Code architecture
 - Pull request process
-- Adding new languages
+- Adding new languages (refer to Core Engine's ADD_LANGUAGE.md)
 
 ---
 

@@ -190,10 +190,6 @@ func GetJobStatusHandler(c *gin.Context) {
 		return
 	}
 
-	executionTime := job.FinishedAt.Sub(job.StartedAt)
-	queueTime := job.StartedAt.Sub(job.QueuedAt)
-	totalTime := job.FinishedAt.Sub(job.QueuedAt)
-
 	util.SetCreditsLeftHeader(c, user.Credits)
 	response.Success(c, http.StatusOK, "job result fetched successfully", gin.H{
 		"jobId":               job.ID,
@@ -210,10 +206,7 @@ func GetJobStatusHandler(c *gin.Context) {
 		"startedAt":  job.StartedAt,
 		"finishedAt": job.FinishedAt,
 
-		// time statistics
-		"executionTimeMs": executionTime.Milliseconds(),
-		"queueTimeMs":     queueTime.Milliseconds(),
-		"totalTimeMs":     totalTime.Milliseconds(),
+		"metrics": job.Metrics,
 	})
 
 }

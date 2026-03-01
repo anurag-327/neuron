@@ -31,7 +31,7 @@ func GetStatus(c *gin.Context) {
 	// 2. Recalculate
 	pubHealth := factory.GetPublisherHealth()
 	subHealth := factory.GetSubscriberHealth()
-	runnerHealth := factory.GetRunnerHealth()
+	// runnerHealth := ""
 
 	newStatus := &models.SystemStatus{
 		UpdatedAt:       time.Now(),
@@ -51,10 +51,10 @@ func GetStatus(c *gin.Context) {
 		newStatus.Subscriber = models.StatusDown
 		newStatus.SubscriberError = subHealth.Error()
 	}
-	if runnerHealth != nil {
-		newStatus.Runner = models.StatusDown
-		newStatus.RunnerError = runnerHealth.Error()
-	}
+	// if runnerHealth != nil {
+	// 	newStatus.Runner = models.StatusDown
+	// 	newStatus.RunnerError = runnerHealth.Error()
+	// }
 
 	// 3. Save to DB
 	_ = repository.UpsertSystemStatus(c.Request.Context(), newStatus)

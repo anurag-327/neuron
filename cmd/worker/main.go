@@ -13,14 +13,17 @@ import (
 	"github.com/anurag-327/neuron/internal/factory"
 	"github.com/anurag-327/neuron/pkg/logger"
 	"github.com/anurag-327/neuron/pkg/sandbox"
-	"github.com/anurag-327/neuron/pkg/sandbox/docker"
-	"github.com/anurag-327/neuron/pkg/sandbox/docker/pool"
 	"github.com/joho/godotenv"
 )
 
 func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Warning: .env file not found, using environment variables")
+	}
+
+	config.NeuronCoreURL = os.Getenv("NEURON_CORE_URL")
+	if config.NeuronCoreURL == "" {
+		log.Fatal("NEURON_CORE_URL environment variable is required")
 	}
 
 	// Initialize logger
@@ -42,14 +45,6 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	// Warm up pools
-	if err := docker.InitDockerPool(ctx); err != nil {
-		appLogger.Error(ctx, time.Now(), "Pool warm-up failed", map[string]interface{}{
-			"error": err.Error(),
-		})
-		log.Fatalf("Pool warm-up failed: %v", err)
-	}
-
 	// Start consumer worker
 	if err := factory.StartConsumer(ctx, config.ExecutionTasksTopic, config.CodeRunnerConsumerGroup, 1000, sandbox.ExecuteCode); err != nil {
 		appLogger.Error(ctx, time.Now(), "Failed to start consumer", map[string]interface{}{
@@ -63,9 +58,6 @@ func main() {
 	// Wait for shutdown signal
 	<-sigChan
 	log.Println("Shutdown signal received... cleaning up")
-
-	// Destroy all warm containers before exit
-	pool.Manager.DestroyAll()
 
 	cancel()
 
