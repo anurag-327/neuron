@@ -44,16 +44,13 @@ Neuron follows a **microservices-inspired architecture** with two main component
 
 ### 2. **Worker** (`cmd/worker/main.go`)
 - Consumes jobs from message queue
-- Manages Docker container pools
-- Executes code in sandboxed environments
+- Forwards execution to the Core Engine
 - Updates job status and results
 
 ### Key Design Patterns
 
-- **Factory Pattern**: For creating publishers, subscribers, and runners
+- **Factory Pattern**: For creating publishers, subscribers
 - **Repository Pattern**: Database access layer
-- **Singleton Pattern**: Global pool manager for containers
-- **Observer Pattern**: Health checks for container pools
 
 ---
 
@@ -138,23 +135,13 @@ Here's how code execution works in Neuron:
 ┌──────────────────────────────────────────┐
 │           Worker                          │
 │  1. Consume job from queue                │
-│  2. Get container from pool               │
-│  3. Write code to mounted volume          │
-│  4. Execute inside container              │
-│  5. Capture stdout/stderr                 │
-│  6. Update job status (success/failed)    │
-│  7. Return container to pool              │
-│  8. Deduct user credits                   │
+│  2. Forward job to Core Engine (HTTP)     │
+│  3. Wait for execution results            │
+│  4. Compile execution logs (stdout/stderr)│
+│  5. Update job status (success/failed)    │
+│  6. Deduct user credits                   │
 └───────────────────────────────────────────┘
 ```
-
-### Container Pool Management
-
-- **Pre-warming**: Containers are created at startup (reduces cold start)
-- **Reuse**: Clean containers are returned to the pool
-- **Scaling**: Pools scale up/down based on demand (InitSize ↔ MaxSize)
-- **Health Checks**: Background goroutines monitor container health
-- **Isolation**: Each container runs in network-isolated mode with read-only root filesystem
 
 ---
 
@@ -188,6 +175,12 @@ backend/
 ---
 
 ## 📝 Contributing Guidelines
+
+> **🚨 Important Note:** Code execution logic, container pooling, and language support has been moved to the isolated **Core Engine**.
+> 
+> If you would like to contribute to the code execution capabilities, sandboxing, or add a new programming language, please head over to the **[Core Engine directory](../core)**.
+> 
+> This directory (`backend`) is focused purely on the API Gateway, Authentication, Billing, and the Code Queue Worker!
 
 ### Code Style
 
@@ -228,7 +221,7 @@ test: add unit tests for credit service
 
 ## 🌐 Adding Language Support
 
-See [LANGUAGE_SUPPORT.md](./LANGUAGE_SUPPORT.md) for detailed instructions on adding new programming languages.
+See the Core Engine's `ADD_LANGUAGE.md` for detailed instructions on adding new programming languages to the runtime environment.
 
 ---
 
@@ -236,8 +229,8 @@ See [LANGUAGE_SUPPORT.md](./LANGUAGE_SUPPORT.md) for detailed instructions on ad
 
 - [API Documentation](./README.md)
 - [Setup Guide](./SETUP.md)
-- [Language Support Guide](./LANGUAGE_SUPPORT.md)
 - [Stats API Documentation](./STATS_API.md)
+- [Core Engine Guide](../core/README.md)
 
 ---
 

@@ -14,12 +14,10 @@ import (
 	"time"
 
 	"github.com/anurag-327/neuron/config"
-	"github.com/anurag-327/neuron/conn"
 	"github.com/anurag-327/neuron/internal/models"
 	"github.com/anurag-327/neuron/internal/repository"
 	"github.com/anurag-327/neuron/internal/services"
-	"github.com/anurag-327/neuron/pkg/sandbox/docker"
-	"github.com/anurag-327/neuron/pkg/sandbox/docker/pool"
+	"github.com/anurag-327/neuron/pkg/engine"
 )
 
 // failJob updates the job as FAILED and persists the failure state.
@@ -90,39 +88,7 @@ func ExecuteCode(jobBytes []byte) error {
 	}
 
 	// -----------------------------
-	// 2) Initialize Docker runner
-	// -----------------------------
-	dC, dockerErr := conn.GetDockerClient()
-	if dockerErr != nil {
-		log.Println("[RUN] failed to get docker client:", dockerErr)
-		failJob(ctx, &job, models.ErrSandboxError, "failed to initiate sandboxed container")
-		return fmt.Errorf("failed to get docker client: %w", dockerErr)
-	}
-	r := docker.NewRunner(dC)
-
-	// -----------------------------
-	// 3) Acquire warm container
-	// -----------------------------
-	p := pool.Manager.GetPool(job.Language)
-	if p == nil {
-		log.Println("[RUN] no pool for language:", job.Language)
-		failJob(ctx, &job, models.ErrInternalError, "unsupported language")
-		return fmt.Errorf("no pool for language")
-	}
-
-	containerID, err := p.Get(ctx)
-	if err != nil {
-		log.Println("[RUN] pool exhausted:", err)
-		failJob(ctx, &job, models.ErrInternalError, "failed to acquire a container")
-		return fmt.Errorf("no available containers")
-	}
-
-	// NOTE:
-	// DO NOT defer Put() here.
-	// Container lifecycle depends on execution result.
-
-	// -----------------------------
-	// 4) Mark job as RUNNING
+	// 2) Mark job as RUNNING
 	// -----------------------------
 	job.Status = models.StatusRunning
 	job.StartedAt = time.Now()
@@ -133,45 +99,48 @@ func ExecuteCode(jobBytes []byte) error {
 	}
 
 	// -----------------------------
-	// 5) Execute user code
+	// 3) Execute on Core Engine
 	// -----------------------------
-	basePath := fmt.Sprintf("/tmp/runner/job_%s", job.ID.Hex())
+	client := engine.NewClient(config.NeuronCoreURL)
 
-	runResult := r.Run(
-		ctx,
-		containerID,
-		basePath,
-		job.Code,
-		job.Input,
-		job.Language,
-	)
+	req := engine.ExecuteRequest{
+		Code:     job.Code,
+		Input:    job.Input,
+		Language: job.Language,
+		Limit: engine.Limit{
+			TimeMs:   3000,       // Default 3s
+			MemoryKB: 256 * 1024, // Default 256MB
+		},
+	}
 
-	// -----------------------------
-	// 6) Handle container lifecycle
-	// -----------------------------
-	if runResult.ContainerDirty {
-		log.Println("[POOL] destroying dirty container:", containerID)
-		p.ReplaceContainer(containerID)
-	} else {
-		log.Println("[POOL] returning clean container:", containerID)
-		p.Put(containerID)
+	runResult, err := client.Execute(ctx, req)
+	if err != nil {
+		log.Printf("[RUN] engine execution failed: %v", err)
+		failJob(ctx, &job, models.ErrInternalError, "Execution engine failure")
+		return fmt.Errorf("engine execution failed: %w", err)
 	}
 
 	// -----------------------------
-	// 7) Persist execution result
+	// 4) Persist execution result
 	// -----------------------------
 	job.FinishedAt = time.Now()
 	job.Stdout = runResult.Stdout
 	job.Stderr = runResult.Stderr
+	job.ExitCode = runResult.ExitCode
+	job.Metrics = models.Metrics{
+		Compile: runResult.Metrics.Compile,
+		Run:     runResult.Metrics.Run,
+		Total:   runResult.Metrics.Total,
+	}
 
 	job.SandboxErrorType = nil
 	if runResult.ErrType != "" {
-		job.SandboxErrorType = &runResult.ErrType
+		errType := models.SandboxError(runResult.ErrType)
+		job.SandboxErrorType = &errType
 	}
 	job.SandboxErrorMessage = runResult.ErrMsg
-	job.ExitCode = runResult.ExitCode
 
-	switch runResult.ErrType {
+	switch models.SandboxError(runResult.ErrType) {
 	case models.ErrSandboxError, models.ErrInternalError:
 		job.Status = models.StatusFailed
 	default:
@@ -184,9 +153,7 @@ func ExecuteCode(jobBytes []byte) error {
 	}
 
 	if runResult.ErrType == "" {
-		executionTime := job.FinishedAt.Sub(job.StartedAt)
 		queueTime := job.StartedAt.Sub(job.QueuedAt)
-		totalTime := job.FinishedAt.Sub(job.QueuedAt)
 		amount := config.GetCreditsForReason(models.CreditReasonSubmission)
 
 		err = services.DeductCreditsAndLog(
@@ -196,10 +163,11 @@ func ExecuteCode(jobBytes []byte) error {
 			models.CreditReasonSubmission,
 			&job.ID,
 			map[string]interface{}{
-				"language":      job.Language,
-				"executionTime": executionTime,
-				"queueTime":     queueTime,
-				"totalTime":     totalTime,
+				"language":    job.Language,
+				"runTime":     job.Metrics.Run,
+				"compileTime": job.Metrics.Compile,
+				"queueTime":   queueTime.Milliseconds(),
+				"totalTime":   job.Metrics.Total,
 			},
 		)
 
@@ -208,6 +176,6 @@ func ExecuteCode(jobBytes []byte) error {
 		}
 	}
 
-	_ = services.UpdateApiLog(ctx, job.ID, job.Status, &runResult.ErrType, runResult.ErrMsg, job.StartedAt, job.FinishedAt, job.QueuedAt)
+	_ = services.UpdateApiLog(ctx, job.ID, job.Status, job.SandboxErrorType, runResult.ErrMsg, job.StartedAt, job.FinishedAt, job.QueuedAt)
 	return nil
 }

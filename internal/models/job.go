@@ -44,6 +44,12 @@ type JobStats struct {
 	FailedJobs        int64   `json:"failedJobs"`
 }
 
+type Metrics struct {
+	Total   int64 `json:"total_ms"`
+	Compile int64 `json:"compile_ms"`
+	Run     int64 `json:"run_ms"`
+}
+
 type Job struct {
 	mgm.DefaultModel `bson:",inline"`
 
@@ -61,6 +67,7 @@ type Job struct {
 	StartedAt           time.Time     `bson:"startedAt,omitempty" json:"started_at,omitempty"`
 	FinishedAt          time.Time     `bson:"finishedAt,omitempty" json:"finished_at,omitempty"`
 	QueuedAt            time.Time     `bson:"queuedAt,omitempty" json:"queued_at,omitempty"`
+	Metrics             Metrics       `bson:"metrics,omitempty" json:"metrics,omitempty"`
 
 	User *User `bson:"-" json:"user,omitempty"`
 }
